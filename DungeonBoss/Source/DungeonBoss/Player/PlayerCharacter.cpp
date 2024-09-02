@@ -7,6 +7,8 @@
 #include "ABCharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "DungeonBoss.h"
+
 
 // Sets default values
 APlayerCharacter::APlayerCharacter(const FObjectInitializer& ObjectInitializer)
@@ -55,14 +57,48 @@ APlayerCharacter::APlayerCharacter(const FObjectInitializer& ObjectInitializer)
 // Called when the game starts or when spawned
 void APlayerCharacter::BeginPlay()
 {
-	Super::BeginPlay();
-	APlayerController* PlayerController = CastChecked<APlayerController>(Controller);
+	DB_LOG(LogDBNetwork, Log, TEXT("%s"), TEXT("Begin"))
 
-	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
-	if (Subsystem != nullptr)
+	Super::BeginPlay();
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController)
 	{
-		Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+		if (Subsystem != nullptr)
+		{
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
 	}
+
+	DB_LOG(LogDBNetwork, Log, TEXT("%s"), TEXT("End"))
+}
+
+void APlayerCharacter::PossessedBy(AController* NewController)
+{
+	DB_LOG(LogDBNetwork, Log, TEXT("%s"), TEXT("Begin"));
+	AActor* OwnerActor = GetOwner();
+	if (OwnerActor)
+	{
+		DB_LOG(LogDBNetwork, Log, TEXT("Owner : %s"), *OwnerActor->GetName());
+	}
+	else
+	{
+		DB_LOG(LogDBNetwork, Log, TEXT("%s"), TEXT("No Owner"));
+	}
+
+	Super::PossessedBy(NewController);
+
+	OwnerActor = GetOwner();
+	if (OwnerActor)
+	{
+		DB_LOG(LogDBNetwork, Log, TEXT("Owner : %s"), *OwnerActor->GetName());
+	}
+	else
+	{
+		DB_LOG(LogDBNetwork, Log, TEXT("%s"), TEXT("No Owner"));
+	}
+
+	DB_LOG(LogDBNetwork, Log, TEXT("%s"), TEXT("End"));
 }
 
 // Called every frame
