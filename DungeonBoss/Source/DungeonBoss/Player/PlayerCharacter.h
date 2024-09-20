@@ -3,18 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Player/DBPlayerBase.h"
 #include "GameFramework/Character.h"
 #include <EnhancedInputLibrary.h>
 #include "PlayerCharacter.generated.h"
 
 UCLASS()
-class DUNGEONBOSS_API APlayerCharacter : public ACharacter
+class DUNGEONBOSS_API APlayerCharacter : public ADBPlayerBase
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this character's properties
-	APlayerCharacter(const FObjectInitializer& ObjectInitializer);
+	APlayerCharacter();
 
 protected:
 	// Called when the game starts or when spawned
@@ -28,10 +29,13 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-public:
+protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
-	UInputMappingContext* DefaultMappingContext;
+	TObjectPtr<class UInputMappingContext> DefaultMappingContext;
+
+	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	UInputMappingContext* DefaultMappingContext;*/
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> MoveAction;
@@ -41,12 +45,5 @@ public:
 
 	void PlayerLook(const FInputActionValue& Value);
 	void PlayerMove(const FInputActionValue& Value);
-
-public:
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	class USpringArmComponent* SpringArm;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
-	class UCameraComponent* Camera;
 
 };

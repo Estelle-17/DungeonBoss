@@ -22,6 +22,8 @@ ADBObstacleActor::ADBObstacleActor()
 	}
 
 	bReplicates = true;
+	NetUpdateFrequency = 1;
+	NetCullDistanceSquared = 4000000.0f;
 }
 
 // Called when the game starts or when spawned
@@ -52,7 +54,19 @@ void ADBObstacleActor::Tick(float DeltaTime)
 	}
 	else
 	{
+		ClientTimeSinceUpdate += DeltaTime;
+		if (ClientTimeBetweenLastUpdate < KINDA_SMALL_NUMBER)
+		{
+			return;
+		}
 
+		const float EstimateRotationYaw = ServerRotationYaw + RotationRate * ClientTimeBetweenLastUpdate;
+		const float LerpRatio = ClientTimeSinceUpdate / ClientTimeBetweenLastUpdate;
+
+		FRotator ClientRotator = RootComponent->GetComponentRotation();
+		const float ClientNewYaw = FMath::Lerp(ServerRotationYaw, EstimateRotationYaw, LerpRatio);
+		ClientRotator.Yaw = ClientNewYaw;
+		RootComponent->SetWorldRotation(ClientRotator);
 	}
 }
 
@@ -72,6 +86,17 @@ void ADBObstacleActor::OnActorChannelOpen(FInBunch& InBunch, UNetConnection* Con
 	DB_LOG(LogDBNetwork, Log, TEXT("%s"), TEXT("End"));
 }
 
+bool ADBObstacleActor::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const
+{
+	bool NetRelevantResult = Super::IsNetRelevantFor(RealViewer, ViewTarget, SrcLocation);
+	if (!NetRelevantResult)
+	{
+		DB_LOG(LogDBNetwork, Log, TEXT("Not Relevant:[%s] %s"), *RealViewer->GetName(), *SrcLocation.ToCompactString());
+	}
+
+	return NetRelevantResult;
+}
+
 void ADBObstacleActor::OnRep_ServerRotationYaw()
 {
 	DB_LOG(LogDBNetwork, Log, TEXT("Yaw : %f"), ServerRotationYaw);
@@ -79,5 +104,8 @@ void ADBObstacleActor::OnRep_ServerRotationYaw()
 	FRotator NewRotator = RootComponent->GetComponentRotation();
 	NewRotator.Yaw = ServerRotationYaw;
 	RootComponent->SetWorldRotation(NewRotator);
+
+	ClientTimeBetweenLastUpdate = ClientTimeSinceUpdate;
+	ClientTimeSinceUpdate = 0;
 }
 
