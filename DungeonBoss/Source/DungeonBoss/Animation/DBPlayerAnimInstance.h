@@ -39,9 +39,9 @@ protected:
 	float MovingThreshould;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
-	uint32 bIsIdle : 1;
+	uint8 bIsIdle : 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character")
-	uint32 bIsFalling : 1;
+	uint8 bIsFalling : 1;
 
 };

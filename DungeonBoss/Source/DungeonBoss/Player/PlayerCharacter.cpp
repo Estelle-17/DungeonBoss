@@ -23,15 +23,25 @@ APlayerCharacter::APlayerCharacter()
 	{
 		DefaultMappingContext = InputMappingContextRef.Object;
 	}
-	static ConstructorHelpers::FObjectFinder<UInputAction> QuaterMoveRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Move.IA_Player_Move'");
-	if (QuaterMoveRef.Object)
+	static ConstructorHelpers::FObjectFinder<UInputAction> PlayerMoveRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Move.IA_Player_Move'");
+	if (PlayerMoveRef.Object)
 	{
-		MoveAction = QuaterMoveRef.Object;
+		MoveAction = PlayerMoveRef.Object;
 	}
-	static ConstructorHelpers::FObjectFinder<UInputAction> QuaterLookRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Look.IA_Player_Look'");
-	if (QuaterLookRef.Object)
+	static ConstructorHelpers::FObjectFinder<UInputAction> PlayerLookRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Look.IA_Player_Look'");
+	if (PlayerLookRef.Object)
 	{
-		LookAction = QuaterLookRef.Object;
+		LookAction = PlayerLookRef.Object;
+	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> PlayerAttackRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Attack.IA_Player_Attack'");
+	if (PlayerAttackRef.Object)
+	{
+		AttackAction = PlayerAttackRef.Object;
+	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> PlayerGuardOrDodgeRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Guard_Dodge.IA_Player_Guard_Dodge'");
+	if (PlayerGuardOrDodgeRef.Object)
+	{
+		GuardOrDodgeAction = PlayerGuardOrDodgeRef.Object;
 	}
 }
 
@@ -98,6 +108,8 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 	enhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerMove);
 	enhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerLook);
+	enhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerAttack);
+	enhancedInputComponent->BindAction(GuardOrDodgeAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerGuardOrDodge);
 }
 
 void APlayerCharacter::PlayerMove(const FInputActionValue& Value)
@@ -118,6 +130,48 @@ void APlayerCharacter::PlayerMove(const FInputActionValue& Value)
 
 	AddMovementInput(ForwardDirection, MovementVector.X);
 	AddMovementInput(RightDirection, MovementVector.Y);
+}
+
+void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
+{
+	if (bCanAnimationOut)
+	{
+		CheckNextAnimation(1);
+	}
+	else if (!bIsGuard || !bIsDodge)
+	{
+		ProcessCombeCommand();
+	}
+}
+
+void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)
+{
+	//Guard Section
+	if (GetCharacterMovement()->GetLastInputVector() == FVector3d(0, 0, 0))
+	{
+		if (bCanAnimationOut)
+		{
+			CheckNextAnimation(2);
+		}
+		else if (bIsAttack)
+		{
+			return;
+		}
+		//막기 실행
+		ProcessGuardCommand();
+	}
+
+	//Dodge Section
+	if (bIsAttack)
+	{
+		return;
+	}
+	
+	if(!bIsGuard)
+	{
+		//회피 실행
+		ProcessDodgeCommand();
+	}
 }
 
 void APlayerCharacter::PlayerLook(const FInputActionValue& Value)

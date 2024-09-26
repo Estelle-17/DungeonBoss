@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Interface/DBAnimationAttackInterface.h"
+#include "Interface/DBAnimationNotifyInterface.h"
 #include "DBPlayerBase.generated.h"
 
 UCLASS()
-class DUNGEONBOSS_API ADBPlayerBase : public ACharacter
+class DUNGEONBOSS_API ADBPlayerBase : public ACharacter, public IDBAnimationAttackInterface, public IDBAnimationNotifyInterface
 {
 	GENERATED_BODY()
 
@@ -29,4 +31,103 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	class UCameraComponent* Camera;
+
+	void CheckNextAnimation(int32 CheckNumber);
+	void MontageAnimationOut();
+
+//IDBAnimationNotifyInterface Section
+protected:
+	virtual void CheckEnableComboTime() override;
+	virtual void EnableGuardTime() override;
+	virtual void DisableGuardTime() override;
+	virtual void AnimationOutEnable() override;
+	virtual void AnimationOutDisable() override;
+
+public:
+	uint8 bCanAnimationOut = 0;
+
+//IDBAnimationAttackInterface Section
+protected:
+	virtual void CheckHitAttack() override;
+	virtual void NextComboCheck() override;
+
+//ComboAttack Section
+protected:
+	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Animation)
+	TObjectPtr<class UAnimMontage> ComboActionMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Attack, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDAComboActionData> ComboActionData;
+
+	void ProcessCombeCommand();
+	void JumpToComboAction();
+	void ComboActionBegin();
+	void SetComboCheckTimer();
+	void ComboCheck();
+
+	FTimerHandle EnableComboTimerHandle;
+	FTimerHandle NextComboTimerHandle;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
+	uint8 HasNextCombo = 0;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
+	int32 CurrentCombo;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
+	int32 MaxCombo;
+
+public:
+	void ComboActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
+
+//Guard Section
+protected:
+	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Animation)
+	TObjectPtr<class UAnimMontage> GuardActionMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Attack, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDAGuardActionData> GuardActionData;
+
+	void ProcessGuardCommand();
+	void GuardActionBegin();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attack)
+	uint8 bIsGuard : 1;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
+	uint8 bCanCounterAttack = 0;
+	
+public:
+	//true동안 공격 방어
+	uint8 bIsGuardState = 0;
+
+	void GuardActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
+
+//Dodge Section
+protected:
+	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Animation)
+	TObjectPtr<class UAnimMontage> DodgeActionMontage;
+
+	void ProcessDodgeCommand();
+	void DodgeActionBegin();
+	void SetDodgeCheckTimer();
+	void DodgeTimeEnd();
+
+	float DodgeTime = 5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attack)
+	uint8 bIsDodge : 1;
+
+public:
+	FTimerHandle DodgeTimerHandle;
+
+	void DodgeActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
+//Attack Section
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attack)
+	uint8 bIsAttack : 1;
+
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class USkeletalMeshComponent> Weapon;
 };

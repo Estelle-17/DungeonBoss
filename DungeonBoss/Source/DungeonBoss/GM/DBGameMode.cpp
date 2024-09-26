@@ -7,7 +7,7 @@
 
 ADBGameMode::ADBGameMode()
 {
-	static ConstructorHelpers::FClassFinder<APawn> DefaultPawnClassRef = TEXT("/Script/Engine.Blueprint'/Game/Blueprint/Player/BP_PlayerCharacter.BP_PlayerCharacter_C'");
+	static ConstructorHelpers::FClassFinder<APawn> DefaultPawnClassRef = TEXT("/Script/Engine.Blueprint'/Game/Blueprint/Player/BP_DBPlayer.BP_DBPlayer_C'");
 	if (DefaultPawnClassRef.Class)
 	{
 		DefaultPawnClass = DefaultPawnClassRef.Class;
