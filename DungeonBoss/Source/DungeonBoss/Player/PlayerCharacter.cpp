@@ -134,18 +134,19 @@ void APlayerCharacter::PlayerMove(const FInputActionValue& Value)
 
 void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 {
-	if (bCanAnimationOut)
+	if (!bIsGuard || bCanAnimationOut)
 	{
-		CheckNextAnimation(1);
-	}
-	else if (!bIsGuard || !bIsDodge)
-	{
-		ProcessCombeCommand();
+		ServerRPCAttack();
 	}
 }
 
 void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)
 {
+	if (bIsAttack)
+	{
+		return;
+	}
+
 	//Guard Section
 	if (GetCharacterMovement()->GetLastInputVector() == FVector3d(0, 0, 0))
 	{
@@ -153,26 +154,70 @@ void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)
 		{
 			CheckNextAnimation(2);
 		}
-		else if (bIsAttack)
-		{
-			return;
-		}
-		//막기 실행
-		ProcessGuardCommand();
-	}
 
-	//Dodge Section
-	if (bIsAttack)
-	{
-		return;
+		if (!bIsGuard)
+		{
+			ServerRPCGuard();
+		}
 	}
-	
-	if(!bIsGuard)
+	else if(!bIsGuard && !bIsDodge)	//Dodge Section
 	{
-		//회피 실행
-		ProcessDodgeCommand();
+		ServerRPCDodge();
 	}
 }
+
+#pragma region Replicated
+
+bool APlayerCharacter::ServerRPCAttack_Validate()
+{
+	return true;
+}
+bool APlayerCharacter::ServerRPCGuard_Validate()
+{
+	return true;
+}
+bool APlayerCharacter::ServerRPCDodge_Validate()
+{
+	return true;
+}
+
+void APlayerCharacter::ServerRPCAttack_Implementation()
+{
+	MulticastRPCAttack();
+}
+
+void APlayerCharacter::ServerRPCGuard_Implementation()
+{
+	MulticastRPCGuard();
+}
+
+void APlayerCharacter::ServerRPCDodge_Implementation()
+{
+	MulticastRPCDodge();
+}
+
+void APlayerCharacter::MulticastRPCAttack_Implementation()
+{
+	if (bCanAnimationOut)
+	{
+		CheckNextAnimation(1);
+	}
+	else
+	{
+		ProcessCombeCommand();
+	}
+}
+void APlayerCharacter::MulticastRPCGuard_Implementation()
+{
+	ProcessGuardCommand();
+}
+
+void APlayerCharacter::MulticastRPCDodge_Implementation()
+{
+	ProcessDodgeCommand();
+}
+
+#pragma endregion
 
 void APlayerCharacter::PlayerLook(const FInputActionValue& Value)
 {

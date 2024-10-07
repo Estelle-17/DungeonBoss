@@ -44,6 +44,7 @@ protected:
 	virtual void AnimationOutDisable() override;
 
 public:
+	UPROPERTY(replicated)
 	uint8 bCanAnimationOut = 0;
 
 //IDBAnimationAttackInterface Section
@@ -53,6 +54,8 @@ protected:
 
 //ComboAttack Section
 protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Animation)
 	TObjectPtr<class UAnimMontage> ComboActionMontage;
 
@@ -69,13 +72,19 @@ protected:
 	FTimerHandle NextComboTimerHandle;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
-	uint8 HasNextCombo = 0;
-
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
 	int32 CurrentCombo;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
 	int32 MaxCombo;
+
+	UPROPERTY(ReplicatedUsing = OnRepCheckAttack)
+	uint8 HasNextCombo = 0;
+
+	UPROPERTY(ReplicatedUsing = OnRepCheckAttack)
+	uint8 bIsAttack : 1;
+
+	UFUNCTION()
+	void OnRepCheckAttack();
 
 public:
 	void ComboActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
@@ -90,14 +99,14 @@ protected:
 
 	void ProcessGuardCommand();
 	void GuardActionBegin();
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attack)
+	
+public:
+	UPROPERTY(replicated)
 	uint8 bIsGuard : 1;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
 	uint8 bCanCounterAttack = 0;
-	
-public:
+
 	//true동안 공격 방어
 	uint8 bIsGuardState = 0;
 
@@ -115,18 +124,14 @@ protected:
 
 	float DodgeTime = 5.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attack)
-	uint8 bIsDodge : 1;
+	FTimerHandle DodgeTimerHandle;	
 
 public:
-	FTimerHandle DodgeTimerHandle;
+	UPROPERTY(replicated)
+	uint8 bIsDodge : 1;
 
 	void DodgeActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
 //Attack Section
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attack)
-	uint8 bIsAttack : 1;
-
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USkeletalMeshComponent> Weapon;

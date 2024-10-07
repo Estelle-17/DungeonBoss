@@ -10,6 +10,7 @@
 #include "GameData/DAComboActionData.h"
 #include "GameData/DAGuardActionData.h"
 #include "DungeonBoss.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
@@ -121,19 +122,25 @@ void ADBPlayerBase::CheckNextAnimation(int32 CheckNumber)
 	switch (CheckNumber)
 	{
 		case 1:
-			NextComboTimerHandle.Invalidate();
-			CurrentCombo = 0;
-			bIsAttack = false;
-			bCanAnimationOut = false;
-
-			MontageAnimationOut();
-			break;
-		case 2:
 			DodgeTimerHandle.Invalidate();
-			bIsDodge = false;
+			if (HasAuthority())
+			{
+				bIsDodge = false;
+			}
 			bCanAnimationOut = false;
 
 			JumpToComboAction();
+			break;
+		case 2:
+			NextComboTimerHandle.Invalidate();
+			CurrentCombo = 0;
+			if (HasAuthority())
+			{
+				bIsAttack = false;
+			}
+			bCanAnimationOut = false;
+
+			MontageAnimationOut();
 			break;
 	}
 }
@@ -169,14 +176,16 @@ void ADBPlayerBase::JumpToComboAction()
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	FName NextSection = *FString::Printf(TEXT("%s%d"), *ComboActionData->SectionPrefix, CurrentCombo);
 	AnimInstance->Montage_JumpToSection(NextSection, ComboActionMontage);
-	//AnimInstance->Montage_Play(ComboActionMontage, AttackSpeedRate);
 
 	FOnMontageEnded EndDelegate;
 	EndDelegate.BindUObject(this, &ADBPlayerBase::ComboActionEnd);
 	AnimInstance->Montage_SetEndDelegate(EndDelegate, ComboActionMontage);
 
-	bIsAttack = true;
-	HasNextCombo = false;
+	if (HasAuthority())
+	{
+		bIsAttack = true;
+		HasNextCombo = false;
+	}
 	NextComboTimerHandle.Invalidate();
 	SetComboCheckTimer();
 }
@@ -194,17 +203,28 @@ void ADBPlayerBase::ComboActionBegin()
 	EndDelegate.BindUObject(this, &ADBPlayerBase::ComboActionEnd);
 	AnimInstance->Montage_SetEndDelegate(EndDelegate, ComboActionMontage);
 
-	bIsAttack = true;
-	HasNextCombo = false;
+	if (HasAuthority())
+	{
+		bIsAttack = true;
+		HasNextCombo = false;
+	}
 	NextComboTimerHandle.Invalidate();
 	SetComboCheckTimer();
+}
+
+void ADBPlayerBase::OnRepCheckAttack()
+{
+
 }
 
 void ADBPlayerBase::ComboActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
 	ensure(CurrentCombo != 0);
 	CurrentCombo = 0;
-	bIsAttack = false;
+	if (HasAuthority())
+	{
+		bIsAttack = false;
+	}
 }
 
 void ADBPlayerBase::SetComboCheckTimer()
@@ -262,14 +282,20 @@ void ADBPlayerBase::GuardActionBegin()
 	EndDelegate.BindUObject(this, &ADBPlayerBase::GuardActionEnd);
 	AnimInstance->Montage_SetEndDelegate(EndDelegate, GuardActionMontage);
 
-	bIsGuard = true;
+	if (HasAuthority())
+	{
+		bIsGuard = true;
+	}
 	bIsGuardState = false;
 	bCanCounterAttack = false;
 }
 
 void ADBPlayerBase::GuardActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
-	bIsGuard = false;
+	if (HasAuthority())
+	{
+		bIsGuard = false;
+	}
 }
 
 #pragma endregion
@@ -295,7 +321,10 @@ void ADBPlayerBase::DodgeActionBegin()
 	EndDelegate.BindUObject(this, &ADBPlayerBase::DodgeActionEnd);
 	AnimInstance->Montage_SetEndDelegate(EndDelegate, DodgeActionMontage);
 
-	bIsDodge = true;
+	if (HasAuthority())
+	{
+		bIsDodge = true;
+	}
 	DodgeTimerHandle.Invalidate();
 	SetDodgeCheckTimer();
 }
@@ -316,19 +345,29 @@ void ADBPlayerBase::DodgeTimeEnd()
 
 void ADBPlayerBase::DodgeActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
-	bIsDodge = false;
+	if (HasAuthority())
+	{
+		bIsDodge = false;
+	}
 }
 
 #pragma region AttackCheck
 
-void ADBPlayerBase::CheckHitAttack()
+void ADBPlayerBase::CheckHitAttack() 
 {
 
 }
+void ADBPlayerBase::NextComboCheck() {}
 
-void ADBPlayerBase::NextComboCheck()
+void ADBPlayerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(ADBPlayerBase, bIsAttack);
+	DOREPLIFETIME(ADBPlayerBase, HasNextCombo);
+	DOREPLIFETIME(ADBPlayerBase, bIsGuard);
+	DOREPLIFETIME(ADBPlayerBase, bIsDodge);
+	DOREPLIFETIME(ADBPlayerBase, bCanAnimationOut);
 }
 
 #pragma endregion
@@ -364,12 +403,18 @@ void ADBPlayerBase::DisableGuardTime()
 
 void ADBPlayerBase::AnimationOutEnable()
 {
-	bCanAnimationOut = true;
+	if (HasAuthority())
+	{
+		bCanAnimationOut = true;
+	}
 }
 
 void ADBPlayerBase::AnimationOutDisable()
 {
-	bCanAnimationOut = false;
+	if (HasAuthority())
+	{
+		bCanAnimationOut = false;
+	}
 }
 
 #pragma endregion

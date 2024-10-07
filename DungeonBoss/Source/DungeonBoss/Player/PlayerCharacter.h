@@ -55,4 +55,23 @@ protected:
 	void PlayerAttack(const FInputActionValue& Value);
 	void PlayerGuardOrDodge(const FInputActionValue& Value);
 
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCAttack();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCGuard();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCDodge();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCAttack();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCGuard();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCDodge();
+
 };
