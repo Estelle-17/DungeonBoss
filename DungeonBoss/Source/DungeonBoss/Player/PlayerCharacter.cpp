@@ -2,12 +2,13 @@
 
 
 #include "PlayerCharacter.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "ABCharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "GameFramework/GameStateBase.h"
+#include "EngineUtils.h"
 #include "DungeonBoss.h"
 
 
@@ -132,11 +133,54 @@ void APlayerCharacter::PlayerMove(const FInputActionValue& Value)
 	AddMovementInput(RightDirection, MovementVector.Y);
 }
 
+void APlayerCharacter::PlayComboAttack()
+{
+	DB_LOG(LogDBNetwork, Log, TEXT("bCanAnimationOut : %s"), bCanAnimationOut ? TEXT("True") : TEXT("false"));
+	if (bCanAnimationOut)
+	{
+		CheckNextAnimation(1);
+	}
+	else
+	{
+		DB_LOG(LogDBNetwork, Log, TEXT("CurrentCombo : %d"), CurrentCombo);
+		if (CurrentCombo != 0)
+		{
+			ProcessNextCombeCommand();
+		}
+		else
+		{
+			ProcessCombeStartCommand();
+		}
+	}
+}
+
+void APlayerCharacter::PlayGuard()
+{
+	if (bCanAnimationOut)
+	{
+		CheckNextAnimation(2);
+	}
+	else if (!bIsGuard)
+	{
+		ProcessGuardCommand();
+	}
+}
+
+void APlayerCharacter::PlayDodge()
+{
+	ProcessDodgeCommand();
+}
+
 void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 {
-	if (!bIsGuard || bCanAnimationOut)
+	if (!bIsGuard && !bIsDodge || bCanAnimationOut)
 	{
-		ServerRPCAttack();
+		if (!HasAuthority())
+		{
+			PlayComboAttack();
+		}
+
+		ServerRPCAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
 	}
 }
 
@@ -147,74 +191,244 @@ void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)
 		return;
 	}
 
-	//Guard Section
 	if (GetCharacterMovement()->GetLastInputVector() == FVector3d(0, 0, 0))
 	{
-		if (bCanAnimationOut)
+		if (!HasAuthority())
 		{
-			CheckNextAnimation(2);
+			PlayGuard();
 		}
 
-		if (!bIsGuard)
+		ServerRPCGuard(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
+	}
+	else if (!bIsGuard && !bIsDodge)	//Dodge Section
+	{
+		if (!HasAuthority())
 		{
-			ServerRPCGuard();
+			PlayDodge();
+		}
+
+		ServerRPCDodge(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
+	}
+}
+
+void APlayerCharacter::AttackHitCheck()
+{
+	if (IsLocallyControlled())
+	{
+		FHitResult OutHitResult;
+
+		const float AttackRange = 1.0f;
+
+		const FVector Forward = GetActorForwardVector();
+		const FVector Start = GetActorLocation() + Forward * GetCapsuleComponent()->GetScaledCapsuleRadius();
+		const FVector End = Start + GetActorForwardVector() * AttackRange;
+
+		bool HitDetected = false;
+
+		float HitCheckTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+		if (!HasAuthority())
+		{
+			if (HitDetected)
+			{
+				ServerRPCNotifyHit(OutHitResult, HitCheckTime);
+			}
+			else
+			{
+				ServerRPCNotifyMiss(Start, End, Forward, HitCheckTime);
+			}
+		}
+		else
+		{
+			if (HitDetected)
+			{
+				AttackHitConfirm(OutHitResult.GetActor());
+			}
 		}
 	}
-	else if(!bIsGuard && !bIsDodge)	//Dodge Section
+}
+
+void APlayerCharacter::AttackHitConfirm(AActor* HitActor)
+{
+	if (HasAuthority())
 	{
-		ServerRPCDodge();
+		//FDamageEvent DamageEvent;
 	}
 }
 
 #pragma region Replicated
 
-bool APlayerCharacter::ServerRPCAttack_Validate()
+bool APlayerCharacter::ServerRPCAttack_Validate(float AttackStartTime)
+{
+	if (LastAttackStartTime == 0.0f)
+	{
+		return true;
+	}
+
+	return true;
+	//return (AttackStartTime - LastAttackStartTime) > AttackTime;
+}
+bool APlayerCharacter::ServerRPCGuard_Validate(float GuardStartTime)
 {
 	return true;
 }
-bool APlayerCharacter::ServerRPCGuard_Validate()
-{
-	return true;
-}
-bool APlayerCharacter::ServerRPCDodge_Validate()
+bool APlayerCharacter::ServerRPCDodge_Validate(float DodgeStartTime)
 {
 	return true;
 }
 
-void APlayerCharacter::ServerRPCAttack_Implementation()
+bool APlayerCharacter::ServerRPCNotifyHit_Validate(const FHitResult& HitResult, float HitCheckTime)
 {
-	MulticastRPCAttack();
+	return true;
 }
 
-void APlayerCharacter::ServerRPCGuard_Implementation()
+bool APlayerCharacter::ServerRPCNotifyMiss_Validate(FVector_NetQuantize TraceStart, FVector_NetQuantize TraceEnd, FVector_NetQuantizeNormal TraceDir, float HitCheckTime)
 {
-	MulticastRPCGuard();
+	return true;
 }
 
-void APlayerCharacter::ServerRPCDodge_Implementation()
+void APlayerCharacter::ServerRPCAttack_Implementation(float AttackStartTime)
 {
-	MulticastRPCDodge();
+	AttackTimeDifference = GetWorld()->GetTimeSeconds() - AttackStartTime;
+	DB_LOG(LogDBNetwork, Log, TEXT("LagTime : %f"), AttackTimeDifference);
+
+	PlayComboAttack();
+
+	LastAttackStartTime = AttackStartTime;
+
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				APlayerCharacter* OtherPlayer = Cast<APlayerCharacter>(PlayerController->GetPawn());
+
+				if (OtherPlayer)
+				{
+					OtherPlayer->ClientRPCProcessComboAttack(this);
+				}
+			}
+		}
+	}
 }
 
+void APlayerCharacter::ServerRPCGuard_Implementation(float GuardStartTime)
+{
+	GuardTimeDifference = GetWorld()->GetTimeSeconds() - GuardStartTime;
+	DB_LOG(LogDBNetwork, Log, TEXT("LagTime : %f"), GuardTimeDifference);
+
+	PlayGuard();
+
+	LastGuardStartTime = GuardStartTime;
+
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				APlayerCharacter* OtherPlayer = Cast<APlayerCharacter>(PlayerController->GetPawn());
+
+				if (OtherPlayer)
+				{
+					OtherPlayer->ClientRPCProcessGuard(this);
+				}
+			}
+		}
+	}
+}
+
+void APlayerCharacter::ServerRPCDodge_Implementation(float DodgeStartTime)
+{
+	DodgeTimeDifference = GetWorld()->GetTimeSeconds() - DodgeStartTime;
+	DB_LOG(LogDBNetwork, Log, TEXT("LagTime : %f"), DodgeTimeDifference);
+
+	PlayDodge();
+	
+
+	LastDodgeStartTime = DodgeStartTime;
+
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				APlayerCharacter* OtherPlayer = Cast<APlayerCharacter>(PlayerController->GetPawn());
+
+				if (OtherPlayer)
+				{
+					OtherPlayer->ClientRPCProcessDodge(this);
+				}
+			}
+		}
+	}
+}
+void APlayerCharacter::ClientRPCProcessComboAttack_Implementation(APlayerCharacter* CharacterToPlay)
+{
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->PlayComboAttack();
+	}
+}
+
+void APlayerCharacter::ClientRPCProcessGuard_Implementation(APlayerCharacter* CharacterToPlay)
+{
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->PlayGuard();
+	}
+}
+
+void APlayerCharacter::ClientRPCProcessDodge_Implementation(APlayerCharacter* CharacterToPlay)
+{
+	if (CharacterToPlay)
+	{	
+		CharacterToPlay->PlayDodge();
+	}
+}
 void APlayerCharacter::MulticastRPCAttack_Implementation()
 {
-	if (bCanAnimationOut)
-	{
-		CheckNextAnimation(1);
-	}
-	else
-	{
-		ProcessCombeCommand();
-	}
+
 }
 void APlayerCharacter::MulticastRPCGuard_Implementation()
 {
-	ProcessGuardCommand();
+	
 }
 
 void APlayerCharacter::MulticastRPCDodge_Implementation()
 {
-	ProcessDodgeCommand();
+	
+}
+
+void APlayerCharacter::ServerRPCNotifyHit_Implementation(const FHitResult& HitResult, float HitCheckTime)
+{
+	AActor* HitActor = HitResult.GetActor();
+
+	if (::IsValid(HitActor))
+	{
+		const FVector HitLocation = HitResult.Location;
+		const FBox HitBox = HitActor->GetComponentsBoundingBox();
+		const FVector ActorBoxCenter = (HitBox.Min + HitBox.Max) * 0.5f;
+
+		if (FVector::DistSquared(HitLocation, ActorBoxCenter) <= AcceptCheckDistance * AcceptCheckDistance)
+		{
+			AttackHitConfirm(HitActor);
+		}
+		else
+		{
+			DB_LOG(LogDBNetwork, Warning, TEXT("%s"), TEXT("HitTest Reject!"));
+		}
+
+#if ENABLE_DRAW_DEBUG
+		DrawDebugPoint(GetWorld(), ActorBoxCenter, 50.0f, FColor::Cyan, false, 5.0f);
+		DrawDebugPoint(GetWorld(), HitLocation, 50.0f, FColor::Magenta, false, 5.0f);
+#endif
+	}
+}
+void APlayerCharacter::ServerRPCNotifyMiss_Implementation(FVector_NetQuantize TraceStart, FVector_NetQuantize TraceEnd, FVector_NetQuantizeNormal TraceDir, float HitCheckTime)
+{
+
 }
 
 #pragma endregion

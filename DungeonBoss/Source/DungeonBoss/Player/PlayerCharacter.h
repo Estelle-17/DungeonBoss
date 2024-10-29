@@ -55,18 +55,39 @@ protected:
 	void PlayerAttack(const FInputActionValue& Value);
 	void PlayerGuardOrDodge(const FInputActionValue& Value);
 
+	void PlayComboAttack();
+	void PlayGuard();
+	void PlayDodge();
+
+	void AttackHitCheck();
+	void AttackHitConfirm(AActor* HitActor);
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRPCAttack();
+	void ServerRPCAttack(float AttackStartTime);
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRPCGuard();
+	void ServerRPCGuard(float GuardStartTime);
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRPCDodge();
+	void ServerRPCDodge(float DodgeStartTime);
 
-	UFUNCTION(NetMulticast, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCNotifyHit(const FHitResult& HitResult, float HitCheckTime);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCNotifyMiss(FVector_NetQuantize TraceStart, FVector_NetQuantize TraceEnd, FVector_NetQuantizeNormal TraceDir, float HitCheckTime);
+
+	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCAttack();
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCProcessComboAttack(APlayerCharacter* CharacterToPlay);
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCProcessGuard(APlayerCharacter* CharacterToPlay);
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCProcessDodge(APlayerCharacter* CharacterToPlay);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCGuard();

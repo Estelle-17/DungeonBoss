@@ -62,7 +62,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Attack, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDAComboActionData> ComboActionData;
 
-	void ProcessCombeCommand();
+	void ProcessCombeStartCommand();
+	void ProcessNextCombeCommand();
+
 	void JumpToComboAction();
 	void ComboActionBegin();
 	void SetComboCheckTimer();
@@ -86,6 +88,11 @@ protected:
 	UFUNCTION()
 	void OnRepCheckAttack();
 
+	float AttackTime = 0.0f;
+	float LastAttackStartTime = 0.0f;
+	float AttackTimeDifference = 0.0f;
+	float AcceptCheckDistance = 300.0f;
+
 public:
 	void ComboActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
 
@@ -99,6 +106,10 @@ protected:
 
 	void ProcessGuardCommand();
 	void GuardActionBegin();
+
+	float GuardTime = 0.0f;
+	float LastGuardStartTime = 0.0f;
+	float GuardTimeDifference = 0.0f;
 	
 public:
 	UPROPERTY(replicated)
@@ -124,7 +135,10 @@ protected:
 
 	float DodgeTime = 5.0f;
 
-	FTimerHandle DodgeTimerHandle;	
+	FTimerHandle DodgeTimerHandle;
+
+	float LastDodgeStartTime = 0.0f;
+	float DodgeTimeDifference = 0.0f;
 
 public:
 	UPROPERTY(replicated)

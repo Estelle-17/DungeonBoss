@@ -11,6 +11,7 @@
 #include "GameData/DAGuardActionData.h"
 #include "DungeonBoss.h"
 #include "Net/UnrealNetwork.h"
+#include "GameFramework/GameStateBase.h"
 
 // Sets default values
 ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
@@ -36,6 +37,7 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 	SpringArm->bInheritYaw = true;
 	SpringArm->bDoCollisionTest = true;
 	SpringArm->bUsePawnControlRotation = true;
+
 	//카메라 설정
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Player Camera"));
 	Camera->SetupAttachment(SpringArm);
@@ -47,6 +49,7 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 	CurrentCombo = 0;
 	MaxCombo = 3;
 	bIsAttack = false;
+	HasNextCombo = false;
 	bIsGuard = false;
 	bIsDodge = false;
 
@@ -107,6 +110,9 @@ void ADBPlayerBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	
+	const float AttackSpeedRate = 1.0f;
+	AttackTime = (ComboActionData->RequireComboFrame[0] / ComboActionData->FrameRate) / AttackSpeedRate;
 }
 
 // Called every frame
@@ -123,10 +129,7 @@ void ADBPlayerBase::CheckNextAnimation(int32 CheckNumber)
 	{
 		case 1:
 			DodgeTimerHandle.Invalidate();
-			if (HasAuthority())
-			{
-				bIsDodge = false;
-			}
+			bIsDodge = false;
 			bCanAnimationOut = false;
 
 			JumpToComboAction();
@@ -134,13 +137,11 @@ void ADBPlayerBase::CheckNextAnimation(int32 CheckNumber)
 		case 2:
 			NextComboTimerHandle.Invalidate();
 			CurrentCombo = 0;
-			if (HasAuthority())
-			{
-				bIsAttack = false;
-			}
+			bIsAttack = false;
 			bCanAnimationOut = false;
 
 			MontageAnimationOut();
+			ProcessGuardCommand();
 			break;
 	}
 }
@@ -153,14 +154,16 @@ void ADBPlayerBase::MontageAnimationOut()
 
 #pragma region ComboAttack
 
-void ADBPlayerBase::ProcessCombeCommand()
+void ADBPlayerBase::ProcessCombeStartCommand()
 {
 	if (CurrentCombo == 0)
 	{
 		ComboActionBegin();
-		return;
 	}
+}
 
+void ADBPlayerBase::ProcessNextCombeCommand()
+{
 	if (!HasNextCombo)
 	{
 		HasNextCombo = true;
@@ -174,18 +177,13 @@ void ADBPlayerBase::JumpToComboAction()
 	const float AttackSpeedRate = 1.0f;
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	FName NextSection = *FString::Printf(TEXT("%s%d"), *ComboActionData->SectionPrefix, CurrentCombo);
-	AnimInstance->Montage_JumpToSection(NextSection, ComboActionMontage);
+	AnimInstance->Montage_Play(ComboActionMontage, AttackSpeedRate);
 
 	FOnMontageEnded EndDelegate;
 	EndDelegate.BindUObject(this, &ADBPlayerBase::ComboActionEnd);
 	AnimInstance->Montage_SetEndDelegate(EndDelegate, ComboActionMontage);
 
-	if (HasAuthority())
-	{
-		bIsAttack = true;
-		HasNextCombo = false;
-	}
+	bIsAttack = true;
 	NextComboTimerHandle.Invalidate();
 	SetComboCheckTimer();
 }
@@ -203,11 +201,7 @@ void ADBPlayerBase::ComboActionBegin()
 	EndDelegate.BindUObject(this, &ADBPlayerBase::ComboActionEnd);
 	AnimInstance->Montage_SetEndDelegate(EndDelegate, ComboActionMontage);
 
-	if (HasAuthority())
-	{
-		bIsAttack = true;
-		HasNextCombo = false;
-	}
+	bIsAttack = true;
 	NextComboTimerHandle.Invalidate();
 	SetComboCheckTimer();
 }
@@ -221,10 +215,13 @@ void ADBPlayerBase::ComboActionEnd(UAnimMontage* TargetMontage, bool IsProperlyE
 {
 	ensure(CurrentCombo != 0);
 	CurrentCombo = 0;
-	if (HasAuthority())
-	{
-		bIsAttack = false;
-	}
+	
+	//첫번째 기본 공격 시간
+	const float AttackSpeedRate = 1.0f;
+	AttackTime = (ComboActionData->RequireComboFrame[0] / ComboActionData->FrameRate) / AttackSpeedRate;
+
+	bIsAttack = false;
+	HasNextCombo = false;
 }
 
 void ADBPlayerBase::SetComboCheckTimer()
@@ -236,9 +233,13 @@ void ADBPlayerBase::SetComboCheckTimer()
 	const float AttackSpeedRate = 1.0f;
 	//다음 공격이 진행되는 시간 체크
 	float NextComboEffectiveTime = (ComboActionData->RequireComboFrame[ComboIndex] / ComboActionData->FrameRate) / AttackSpeedRate;
-	if (NextComboEffectiveTime > 0.0f)
+	AttackTime = NextComboEffectiveTime;
+
+	//클라이언트와 서버 간의 핑 차이 계산
+	AttackTimeDifference = FMath::Clamp(AttackTimeDifference, 0.0f, AttackTime - 0.01f);
+	if (AttackTime - AttackTimeDifference > 0.0f)
 	{
-		GetWorld()->GetTimerManager().SetTimer(NextComboTimerHandle, this, &ADBPlayerBase::ComboCheck, NextComboEffectiveTime, false);
+		GetWorld()->GetTimerManager().SetTimer(NextComboTimerHandle, this, &ADBPlayerBase::ComboCheck, AttackTime, false);
 	}
 }
 
@@ -282,20 +283,15 @@ void ADBPlayerBase::GuardActionBegin()
 	EndDelegate.BindUObject(this, &ADBPlayerBase::GuardActionEnd);
 	AnimInstance->Montage_SetEndDelegate(EndDelegate, GuardActionMontage);
 
-	if (HasAuthority())
-	{
-		bIsGuard = true;
-	}
+	bIsGuard = true;
+	
 	bIsGuardState = false;
 	bCanCounterAttack = false;
 }
 
 void ADBPlayerBase::GuardActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
-	if (HasAuthority())
-	{
-		bIsGuard = false;
-	}
+	bIsGuard = false;
 }
 
 #pragma endregion
@@ -321,10 +317,8 @@ void ADBPlayerBase::DodgeActionBegin()
 	EndDelegate.BindUObject(this, &ADBPlayerBase::DodgeActionEnd);
 	AnimInstance->Montage_SetEndDelegate(EndDelegate, DodgeActionMontage);
 
-	if (HasAuthority())
-	{
-		bIsDodge = true;
-	}
+	bIsDodge = true;
+
 	DodgeTimerHandle.Invalidate();
 	SetDodgeCheckTimer();
 }
@@ -345,17 +339,14 @@ void ADBPlayerBase::DodgeTimeEnd()
 
 void ADBPlayerBase::DodgeActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
-	if (HasAuthority())
-	{
-		bIsDodge = false;
-	}
+	bIsDodge = false;
 }
 
 #pragma region AttackCheck
 
 void ADBPlayerBase::CheckHitAttack() 
 {
-
+	
 }
 void ADBPlayerBase::NextComboCheck() {}
 
@@ -363,11 +354,11 @@ void ADBPlayerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ADBPlayerBase, bIsAttack);
-	DOREPLIFETIME(ADBPlayerBase, HasNextCombo);
-	DOREPLIFETIME(ADBPlayerBase, bIsGuard);
-	DOREPLIFETIME(ADBPlayerBase, bIsDodge);
-	DOREPLIFETIME(ADBPlayerBase, bCanAnimationOut);
+	//DOREPLIFETIME(ADBPlayerBase, bIsAttack);
+	//DOREPLIFETIME(ADBPlayerBase, HasNextCombo);
+	//DOREPLIFETIME(ADBPlayerBase, bIsGuard);
+	//DOREPLIFETIME(ADBPlayerBase, bIsDodge);
+	//DOREPLIFETIME(ADBPlayerBase, bCanAnimationOut);
 }
 
 #pragma endregion
@@ -403,18 +394,12 @@ void ADBPlayerBase::DisableGuardTime()
 
 void ADBPlayerBase::AnimationOutEnable()
 {
-	if (HasAuthority())
-	{
-		bCanAnimationOut = true;
-	}
+	bCanAnimationOut = true;
 }
 
 void ADBPlayerBase::AnimationOutDisable()
 {
-	if (HasAuthority())
-	{
-		bCanAnimationOut = false;
-	}
+	bCanAnimationOut = false;
 }
 
 #pragma endregion
