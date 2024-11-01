@@ -4,6 +4,7 @@
 #include "DBPlayerBase.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/BoxComponent.h"
 #include "Camera/CameraComponent.h"
 #include "ABCharacterMovementComponent.h"
 #include "Animation/AnimMontage.h"
@@ -12,6 +13,8 @@
 #include "DungeonBoss.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/GameStateBase.h"
+#include "MotionWarpingComponent.h"
+#include "Collision/DBCharacterWeaponCollision.h"
 
 // Sets default values
 ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
@@ -52,6 +55,10 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 	HasNextCombo = false;
 	bIsGuard = false;
 	bIsDodge = false;
+
+	//MotionWarping
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarping"));
+	TargetVector = FVector::Zero();
 
 	//SkeletalMesh
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> CharacterMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/Prefab/PlayerCharacter.PlayerCharacter'"));
@@ -99,10 +106,28 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 	}
 
 	//Weapon Component
+	//static ConstructorHelpers::FClassFinder<ADBCharacterWeaponCollision> WeaponRef(TEXT("/Script/CoreUObject.Class'/Script/DungeonBoss.DBCharacterWeaponCollision'"));
+	//if (WeaponRef.Class)
+	//{
+	//	Weapon = WeaponRef.Class;
+	//}
+
 	Weapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon"));
 	Weapon->SetupAttachment(GetMesh(), TEXT("Bip001-R-Hand"));
 	Weapon->SetRelativeLocation(FVector3d(8.0f, 0.0f, 2.0f));
-	Weapon->SetRelativeRotation(FRotator(-90.0f, 90.0f, 0.0f));
+	Weapon->SetRelativeRotation(FRotator(0.0f, 90.0f, -90.0f));
+
+	/*Weapon = CreateDefaultSubobject<ADBCharacterWeaponCollision>(TEXT("WeaponCollision"));
+
+	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
+	Weapon->AttachToComponent(GetMesh(), TransformRules, TEXT("Bip001-R-Hand"));
+	Weapon->SetActorRelativeLocation(FVector3d(8.0f, 0.0f, 2.0f));
+	Weapon->SetActorRelativeRotation(FRotator(-90.0f, 90.0f, 0.0f));*/
+
+	WeaponCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("WeaponCollision"));
+	WeaponCollision->SetupAttachment(Weapon);
+	WeaponCollision->SetRelativeLocation(FVector3d(0.0f, 75.0f, 0.0f));
+	WeaponCollision->SetRelativeScale3D(FVector3d(0.2f, 3.0f, 0.2f));
 }
 
 // Called when the game starts or when spawned
@@ -110,7 +135,18 @@ void ADBPlayerBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	
+	/*if (Weapon)
+	{
+		ADBCharacterWeaponCollision* SpawnWeapon = GetWorld()->SpawnActor<ADBCharacterWeaponCollision>(Weapon, FVector::ZeroVector, FRotator::ZeroRotator);
+
+		if (SpawnWeapon)
+		{
+			SpawnWeapon->Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("Bip001-R-Hand"));
+			SpawnWeapon->Weapon->SetRelativeLocation(FVector3d(8.0f, 0.0f, 2.0f));
+			SpawnWeapon->Weapon->SetRelativeRotation(FRotator(0.0f, 90.0f, -90.0f));
+		}
+	}*/
+
 	const float AttackSpeedRate = 1.0f;
 	AttackTime = (ComboActionData->RequireComboFrame[0] / ComboActionData->FrameRate) / AttackSpeedRate;
 }
@@ -119,7 +155,6 @@ void ADBPlayerBase::BeginPlay()
 void ADBPlayerBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void ADBPlayerBase::CheckNextAnimation(int32 CheckNumber)
@@ -249,13 +284,46 @@ void ADBPlayerBase::ComboCheck()
 	if (HasNextCombo)
 	{
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
 		CurrentCombo = FMath::Clamp(CurrentCombo + 1, 1, ComboActionData->MaxComboCount);
 		FName NextSection = *FString::Printf(TEXT("%s%d"), *ComboActionData->SectionPrefix, CurrentCombo);
 		AnimInstance->Montage_JumpToSection(NextSection, ComboActionMontage);
+
+		bCheckMotionWarping = true;
+
 		SetComboCheckTimer();
 		HasNextCombo = false;
 	}
+}
+
+void ADBPlayerBase::SetMotionWarpingRotation(FVector MovementVector)
+{
+	TargetVector = MovementVector;
+
+	FMotionWarpingTarget Target;
+
+	if (MovementVector == FVector3d(0, 0, 0))
+	{
+		Target.Name = "AttackTarget";
+		Target.Rotation = GetActorForwardVector().Rotation();
+
+		MotionWarpingComponent->AddOrUpdateWarpTarget(Target);
+	}
+	else
+	{
+		MovementVector.Z = 0.0f;
+
+		Target.Name = "AttackTarget";
+		Target.Rotation = MovementVector.Rotation();
+
+		MotionWarpingComponent->AddOrUpdateWarpTarget(Target);
+	}
+}
+
+void ADBPlayerBase::ResetMotionWarpingRotation()
+{
+	TargetVector = GetCharacterMovement()->GetLastInputVector();
+
+	SetMotionWarpingRotation(TargetVector);
 }
 
 #pragma endregion
@@ -295,6 +363,8 @@ void ADBPlayerBase::GuardActionEnd(UAnimMontage* TargetMontage, bool IsProperlyE
 }
 
 #pragma endregion
+
+#pragma region Dodge
 
 void ADBPlayerBase::ProcessDodgeCommand()
 {
@@ -342,13 +412,9 @@ void ADBPlayerBase::DodgeActionEnd(UAnimMontage* TargetMontage, bool IsProperlyE
 	bIsDodge = false;
 }
 
-#pragma region AttackCheck
+#pragma endregion
 
-void ADBPlayerBase::CheckHitAttack() 
-{
-	
-}
-void ADBPlayerBase::NextComboCheck() {}
+#pragma region AttackCheck
 
 void ADBPlayerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -364,6 +430,16 @@ void ADBPlayerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 #pragma endregion
 
 #pragma region Notify
+
+void ADBPlayerBase::CheckHitAttack()
+{
+
+}
+
+void ADBPlayerBase::NextComboCheck()
+{
+
+}
 
 void ADBPlayerBase::CheckEnableComboTime()
 {

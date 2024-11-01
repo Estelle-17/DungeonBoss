@@ -9,7 +9,7 @@
 #include "DBPlayerBase.generated.h"
 
 UCLASS()
-class DUNGEONBOSS_API ADBPlayerBase : public ACharacter, public IDBAnimationAttackInterface, public IDBAnimationNotifyInterface
+class DUNGEONBOSS_API ADBPlayerBase : public ACharacter, public IDBAnimationNotifyInterface, public IDBAnimationAttackInterface
 {
 	GENERATED_BODY()
 
@@ -35,6 +35,22 @@ protected:
 	void CheckNextAnimation(int32 CheckNumber);
 	void MontageAnimationOut();
 
+	//MotionWarping Section
+	UPROPERTY(EditAnywhere, BlueprintreadWrite, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UMotionWarpingComponent> MotionWarpingComponent;
+
+	void SetMotionWarpingRotation(FVector MovementVector);
+	void ResetMotionWarpingRotation(); 
+
+	FVector TargetVector;
+
+	uint8 bCheckMotionWarping = 0;
+
+//IDBAnimationAttackInterface Section
+protected:
+	virtual void CheckHitAttack() override;
+	virtual void NextComboCheck() override;
+
 //IDBAnimationNotifyInterface Section
 protected:
 	virtual void CheckEnableComboTime() override;
@@ -44,13 +60,7 @@ protected:
 	virtual void AnimationOutDisable() override;
 
 public:
-	UPROPERTY(replicated)
 	uint8 bCanAnimationOut = 0;
-
-//IDBAnimationAttackInterface Section
-protected:
-	virtual void CheckHitAttack() override;
-	virtual void NextComboCheck() override;
 
 //ComboAttack Section
 protected:
@@ -79,10 +89,7 @@ protected:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
 	int32 MaxCombo;
 
-	UPROPERTY(ReplicatedUsing = OnRepCheckAttack)
 	uint8 HasNextCombo = 0;
-
-	UPROPERTY(ReplicatedUsing = OnRepCheckAttack)
 	uint8 bIsAttack : 1;
 
 	UFUNCTION()
@@ -112,7 +119,6 @@ protected:
 	float GuardTimeDifference = 0.0f;
 	
 public:
-	UPROPERTY(replicated)
 	uint8 bIsGuard : 1;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
@@ -141,7 +147,6 @@ protected:
 	float DodgeTimeDifference = 0.0f;
 
 public:
-	UPROPERTY(replicated)
 	uint8 bIsDodge : 1;
 
 	void DodgeActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
@@ -149,4 +154,10 @@ public:
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USkeletalMeshComponent> Weapon;
+
+	//UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
+	//TSubclassOf<class ADBCharacterWeaponCollision> Weapon;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collision, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UBoxComponent> WeaponCollision;
 };

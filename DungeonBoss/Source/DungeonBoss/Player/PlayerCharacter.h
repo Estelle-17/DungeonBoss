@@ -63,6 +63,9 @@ protected:
 	void AttackHitConfirm(AActor* HitActor);
 
 	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCUpdateTargetVector(FVector MoveVector);
+
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCAttack(float AttackStartTime);
 
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -79,6 +82,9 @@ protected:
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCAttack();
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCUpdateTargetVector(APlayerCharacter* CharacterToPlay, FVector MoveVector);
 
 	UFUNCTION(Client, Unreliable)
 	void ClientRPCProcessComboAttack(APlayerCharacter* CharacterToPlay);

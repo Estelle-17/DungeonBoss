@@ -10,6 +10,7 @@
 #include "GameFramework/GameStateBase.h"
 #include "EngineUtils.h"
 #include "DungeonBoss.h"
+#include "MotionWarpingComponent.h"
 
 
 // Sets default values
@@ -98,6 +99,20 @@ void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (bCheckMotionWarping)
+	{
+		if (!HasAuthority())
+		{
+			SetMotionWarpingRotation(GetCharacterMovement()->GetLastInputVector());
+		}
+
+		if (IsLocallyControlled())
+		{
+			ServerRPCUpdateTargetVector(GetCharacterMovement()->GetLastInputVector());
+		}
+
+		bCheckMotionWarping = false;
+	}
 }
 
 // Called to bind functionality to input
@@ -257,6 +272,11 @@ void APlayerCharacter::AttackHitConfirm(AActor* HitActor)
 
 #pragma region Replicated
 
+bool APlayerCharacter::ServerRPCUpdateTargetVector_Validate(FVector MoveVector)
+{
+	return true;
+}
+
 bool APlayerCharacter::ServerRPCAttack_Validate(float AttackStartTime)
 {
 	if (LastAttackStartTime == 0.0f)
@@ -284,6 +304,28 @@ bool APlayerCharacter::ServerRPCNotifyHit_Validate(const FHitResult& HitResult, 
 bool APlayerCharacter::ServerRPCNotifyMiss_Validate(FVector_NetQuantize TraceStart, FVector_NetQuantize TraceEnd, FVector_NetQuantizeNormal TraceDir, float HitCheckTime)
 {
 	return true;
+}
+
+void APlayerCharacter::ServerRPCUpdateTargetVector_Implementation(FVector MoveVector)
+{
+	SetMotionWarpingRotation(MoveVector);
+
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				APlayerCharacter* OtherPlayer = Cast<APlayerCharacter>(PlayerController->GetPawn());
+
+				if (OtherPlayer)
+				{
+					OtherPlayer->TargetVector = MoveVector;
+					OtherPlayer->ClientRPCUpdateTargetVector(this, MoveVector);
+				}
+			}
+		}
+	}
 }
 
 void APlayerCharacter::ServerRPCAttack_Implementation(float AttackStartTime)
@@ -344,7 +386,6 @@ void APlayerCharacter::ServerRPCDodge_Implementation(float DodgeStartTime)
 	DB_LOG(LogDBNetwork, Log, TEXT("LagTime : %f"), DodgeTimeDifference);
 
 	PlayDodge();
-	
 
 	LastDodgeStartTime = DodgeStartTime;
 
@@ -364,6 +405,15 @@ void APlayerCharacter::ServerRPCDodge_Implementation(float DodgeStartTime)
 		}
 	}
 }
+
+void APlayerCharacter::ClientRPCUpdateTargetVector_Implementation(APlayerCharacter* CharacterToPlay, FVector MoveVector)
+{
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->SetMotionWarpingRotation(MoveVector);
+	}
+}
+
 void APlayerCharacter::ClientRPCProcessComboAttack_Implementation(APlayerCharacter* CharacterToPlay)
 {
 	if (CharacterToPlay)
