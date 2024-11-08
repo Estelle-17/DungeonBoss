@@ -22,4 +22,12 @@ protected:
 	virtual void PostNetInit() override;
 	virtual void BeginPlay() override;
 	virtual void OnPossess(APawn* InPawn) override;
+
+//HUD Section
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
+	TSubclassOf<class UDBHUDWidget> DBHUDWidgetClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
+	TObjectPtr<class UDBHUDWidget> DBHUDWidget;
 };

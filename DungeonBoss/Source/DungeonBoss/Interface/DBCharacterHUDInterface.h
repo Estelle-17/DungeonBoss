@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "DBAnimationAttackInterface.generated.h"
+#include "DBCharacterHUDInterface.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class UDBAnimationAttackInterface : public UInterface
+class UDBCharacterHUDInterface : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -16,12 +16,11 @@ class UDBAnimationAttackInterface : public UInterface
 /**
  * 
  */
-class DUNGEONBOSS_API IDBAnimationAttackInterface
+class DUNGEONBOSS_API IDBCharacterHUDInterface
 {
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual void CheckHitEnable() = 0;
-	virtual void CheckHitDisable() = 0;
+	virtual void SetupHUDWidget(class UDBHUDWidget* InHUDWidget) = 0;
 };

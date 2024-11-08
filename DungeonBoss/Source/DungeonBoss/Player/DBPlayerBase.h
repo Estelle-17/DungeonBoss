@@ -6,10 +6,12 @@
 #include "GameFramework/Character.h"
 #include "Interface/DBAnimationAttackInterface.h"
 #include "Interface/DBAnimationNotifyInterface.h"
+#include "Interface/DBCharacterHUDInterface.h"
+#include "GameData/DBCharacterStat.h"
 #include "DBPlayerBase.generated.h"
 
 UCLASS()
-class DUNGEONBOSS_API ADBPlayerBase : public ACharacter, public IDBAnimationNotifyInterface, public IDBAnimationAttackInterface
+class DUNGEONBOSS_API ADBPlayerBase : public ACharacter, public IDBAnimationNotifyInterface, public IDBAnimationAttackInterface, public IDBCharacterHUDInterface
 {
 	GENERATED_BODY()
 
@@ -35,7 +37,8 @@ protected:
 	void CheckNextAnimation(int32 CheckNumber);
 	void MontageAnimationOut();
 
-	//MotionWarping Section
+//MotionWarping Section
+protected:
 	UPROPERTY(EditAnywhere, BlueprintreadWrite, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UMotionWarpingComponent> MotionWarpingComponent;
 
@@ -46,10 +49,24 @@ protected:
 
 	uint8 bCheckMotionWarping = 0;
 
+// Stat Section
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDBCharacterStatComponent> Stat;
+
+//UI Section
+protected:
+	virtual void SetupHUDWidget(class UDBHUDWidget* InHUDWidget) override;
+
+//UI Widget Section
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Widget, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UWidgetComponent> HpBar;
+
 //IDBAnimationAttackInterface Section
 protected:
-	virtual void CheckHitAttack() override;
-	virtual void NextComboCheck() override;
+	virtual void CheckHitEnable() override;
+	virtual void CheckHitDisable() override;
 
 //IDBAnimationNotifyInterface Section
 protected:
@@ -155,9 +172,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USkeletalMeshComponent> Weapon;
 
-	//UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
-	//TSubclassOf<class ADBCharacterWeaponCollision> Weapon;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collision, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UBoxComponent> WeaponCollision;
+
+protected:
+	TArray<AActor*> HitEnemies;
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 };

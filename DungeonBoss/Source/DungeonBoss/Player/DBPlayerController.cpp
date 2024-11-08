@@ -3,10 +3,15 @@
 
 #include "Player/DBPlayerController.h"
 #include "DungeonBoss.h"
+#include "UI/DBHUDWidget.h"
 
 ADBPlayerController::ADBPlayerController()
 {
-
+	static ConstructorHelpers::FClassFinder<UDBHUDWidget> DBHUDWidgetRef(TEXT("/Game/UI/WBP_DBHUD.WBP_DBHUD_C"));
+	if (DBHUDWidgetRef.Class)
+	{
+		DBHUDWidgetClass = DBHUDWidgetRef.Class;
+	}
 }
 
 //네트워크와 무관하게 액터를 초기화할 때 사용
@@ -46,6 +51,12 @@ void ADBPlayerController::PostNetInit()
 void ADBPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	DBHUDWidget = CreateWidget<UDBHUDWidget>(this, DBHUDWidgetClass);
+	if (DBHUDWidget)
+	{
+		DBHUDWidget->AddToViewport();
+	}
 }
 
 void ADBPlayerController::OnPossess(APawn* InPawn)

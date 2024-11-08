@@ -3,15 +3,17 @@
 
 #include "PlayerCharacter.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/BoxComponent.h"
 #include "ABCharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "GameFramework/GameStateBase.h"
+#include "Engine/DamageEvents.h"
 #include "EngineUtils.h"
 #include "DungeonBoss.h"
 #include "MotionWarpingComponent.h"
-
+#include "Stat/DBCharacterStatComponent.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -45,6 +47,9 @@ APlayerCharacter::APlayerCharacter()
 	{
 		GuardOrDodgeAction = PlayerGuardOrDodgeRef.Object;
 	}
+
+	//Collision Section
+	WeaponCollision->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OnOverlapBegin);
 }
 
 // Called when the game starts or when spawned
@@ -146,6 +151,14 @@ void APlayerCharacter::PlayerMove(const FInputActionValue& Value)
 
 	AddMovementInput(ForwardDirection, MovementVector.X);
 	AddMovementInput(RightDirection, MovementVector.Y);
+}
+
+void APlayerCharacter::PlayerLook(const FInputActionValue& Value)
+{
+	FVector2D LookVector = Value.Get<FVector2D>();
+
+	AddControllerYawInput(LookVector.X);
+	AddControllerPitchInput(LookVector.Y);
 }
 
 void APlayerCharacter::PlayComboAttack()
@@ -266,7 +279,10 @@ void APlayerCharacter::AttackHitConfirm(AActor* HitActor)
 {
 	if (HasAuthority())
 	{
-		//FDamageEvent DamageEvent;
+		const float AttackDamage = Stat->GetTotalStat().Attack;
+		FDamageEvent DamageEvent;
+		HitActor->TakeDamage(AttackDamage, DamageEvent, GetController(), this);
+		
 	}
 }
 
@@ -455,6 +471,8 @@ void APlayerCharacter::ServerRPCNotifyHit_Implementation(const FHitResult& HitRe
 {
 	AActor* HitActor = HitResult.GetActor();
 
+	DB_LOG(LogDBNetwork, Log, TEXT("%s"), *HitActor->GetName());
+
 	if (::IsValid(HitActor))
 	{
 		const FVector HitLocation = HitResult.Location;
@@ -463,17 +481,13 @@ void APlayerCharacter::ServerRPCNotifyHit_Implementation(const FHitResult& HitRe
 
 		if (FVector::DistSquared(HitLocation, ActorBoxCenter) <= AcceptCheckDistance * AcceptCheckDistance)
 		{
+			HitEnemies.Emplace(HitActor);
 			AttackHitConfirm(HitActor);
 		}
 		else
 		{
 			DB_LOG(LogDBNetwork, Warning, TEXT("%s"), TEXT("HitTest Reject!"));
 		}
-
-#if ENABLE_DRAW_DEBUG
-		DrawDebugPoint(GetWorld(), ActorBoxCenter, 50.0f, FColor::Cyan, false, 5.0f);
-		DrawDebugPoint(GetWorld(), HitLocation, 50.0f, FColor::Magenta, false, 5.0f);
-#endif
 	}
 }
 void APlayerCharacter::ServerRPCNotifyMiss_Implementation(FVector_NetQuantize TraceStart, FVector_NetQuantize TraceEnd, FVector_NetQuantizeNormal TraceDir, float HitCheckTime)
@@ -483,10 +497,28 @@ void APlayerCharacter::ServerRPCNotifyMiss_Implementation(FVector_NetQuantize Tr
 
 #pragma endregion
 
-void APlayerCharacter::PlayerLook(const FInputActionValue& Value)
-{
-	FVector2D LookVector = Value.Get<FVector2D>();
+#pragma region Collision
 
-	AddControllerYawInput(LookVector.X);
-	AddControllerPitchInput(LookVector.Y);
+void APlayerCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (SweepResult.GetComponent()->ComponentTags.Contains(FName(TEXT("Enemy"))) && !HitEnemies.Contains(OtherActor))
+	{
+		DB_LOG(LogDBNetwork, Log, TEXT("Find Enemy!"));
+
+		float HitCheckTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+
+		if (!HasAuthority())
+		{
+			ServerRPCNotifyHit(SweepResult, HitCheckTime);
+		}
+		else
+		{
+			HitEnemies.Emplace(OtherActor);
+			AttackHitConfirm(SweepResult.GetActor());
+		}
+	}
 }
+
+#pragma endregion
+
+

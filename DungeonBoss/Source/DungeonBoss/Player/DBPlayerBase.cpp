@@ -10,11 +10,13 @@
 #include "Animation/AnimMontage.h"
 #include "GameData/DAComboActionData.h"
 #include "GameData/DAGuardActionData.h"
+#include "Stat/DBCharacterStatComponent.h"
 #include "DungeonBoss.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/GameStateBase.h"
 #include "MotionWarpingComponent.h"
-#include "Collision/DBCharacterWeaponCollision.h"
+#include "Components/WidgetComponent.h"
+#include "UI/DBHUDWidget.h"
 
 // Sets default values
 ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
@@ -25,6 +27,7 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 
 	//Capsule 설정
 	GetCapsuleComponent()->InitCapsuleSize(35.f, 88.0f);
+	GetCapsuleComponent()->ComponentTags.Add(FName("Player"));
 
 	//Mesh 설정
 	GetMesh()->SetRelativeLocation(FVector3d(0.0f, 0.0f, -90.0f));
@@ -105,47 +108,32 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 		DodgeActionMontage = DodgeActionMontageRef.Object;
 	}
 
-	//Weapon Component
-	//static ConstructorHelpers::FClassFinder<ADBCharacterWeaponCollision> WeaponRef(TEXT("/Script/CoreUObject.Class'/Script/DungeonBoss.DBCharacterWeaponCollision'"));
-	//if (WeaponRef.Class)
-	//{
-	//	Weapon = WeaponRef.Class;
-	//}
+	//Stat Section
+	Stat = CreateDefaultSubobject<UDBCharacterStatComponent>(TEXT("Stat"));
 
+	//Widget Section
+	HpBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("HpBar"));
+
+	//Weapon Component
 	Weapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon"));
 	Weapon->SetupAttachment(GetMesh(), TEXT("Bip001-R-Hand"));
 	Weapon->SetRelativeLocation(FVector3d(8.0f, 0.0f, 2.0f));
 	Weapon->SetRelativeRotation(FRotator(0.0f, 90.0f, -90.0f));
-
-	/*Weapon = CreateDefaultSubobject<ADBCharacterWeaponCollision>(TEXT("WeaponCollision"));
-
-	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-	Weapon->AttachToComponent(GetMesh(), TransformRules, TEXT("Bip001-R-Hand"));
-	Weapon->SetActorRelativeLocation(FVector3d(8.0f, 0.0f, 2.0f));
-	Weapon->SetActorRelativeRotation(FRotator(-90.0f, 90.0f, 0.0f));*/
+	Weapon->SetCollisionProfileName(TEXT("Pawn"));
 
 	WeaponCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("WeaponCollision"));
 	WeaponCollision->SetupAttachment(Weapon);
 	WeaponCollision->SetRelativeLocation(FVector3d(0.0f, 75.0f, 0.0f));
 	WeaponCollision->SetRelativeScale3D(FVector3d(0.2f, 3.0f, 0.2f));
+	WeaponCollision->SetGenerateOverlapEvents(true);
+	WeaponCollision->SetCollisionProfileName(TEXT("WeaponPreset"));
+	WeaponCollision->ComponentTags.Add(FName("Weapon"));
 }
 
 // Called when the game starts or when spawned
 void ADBPlayerBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	/*if (Weapon)
-	{
-		ADBCharacterWeaponCollision* SpawnWeapon = GetWorld()->SpawnActor<ADBCharacterWeaponCollision>(Weapon, FVector::ZeroVector, FRotator::ZeroRotator);
-
-		if (SpawnWeapon)
-		{
-			SpawnWeapon->Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("Bip001-R-Hand"));
-			SpawnWeapon->Weapon->SetRelativeLocation(FVector3d(8.0f, 0.0f, 2.0f));
-			SpawnWeapon->Weapon->SetRelativeRotation(FRotator(0.0f, 90.0f, -90.0f));
-		}
-	}*/
 
 	const float AttackSpeedRate = 1.0f;
 	AttackTime = (ComboActionData->RequireComboFrame[0] / ComboActionData->FrameRate) / AttackSpeedRate;
@@ -427,18 +415,44 @@ void ADBPlayerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	//DOREPLIFETIME(ADBPlayerBase, bCanAnimationOut);
 }
 
+float ADBPlayerBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	Stat->ApplyDamage(DamageAmount);
+
+	return DamageAmount;
+}
+
+#pragma endregion
+
+#pragma region UI
+
+void ADBPlayerBase::SetupHUDWidget(UDBHUDWidget* InHUDWidget)
+{
+	if (InHUDWidget)
+	{
+		InHUDWidget->UpdateStat(Stat->GetBaseStat(), Stat->GetModifierStat());
+		InHUDWidget->UpdateHpBar(Stat->GetCurrentHp());
+
+		Stat->OnStatChanged.AddUObject(InHUDWidget, &UDBHUDWidget::UpdateStat);
+		Stat->OnHpChanged.AddUObject(InHUDWidget, &UDBHUDWidget::UpdateHpBar);
+	}
+}
+
 #pragma endregion
 
 #pragma region Notify
 
-void ADBPlayerBase::CheckHitAttack()
+void ADBPlayerBase::CheckHitEnable()
 {
-
+	WeaponCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
-void ADBPlayerBase::NextComboCheck()
+void ADBPlayerBase::CheckHitDisable()
 {
-
+	WeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HitEnemies.Empty();
 }
 
 void ADBPlayerBase::CheckEnableComboTime()
