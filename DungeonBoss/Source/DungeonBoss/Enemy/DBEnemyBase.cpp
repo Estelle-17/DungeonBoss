@@ -38,8 +38,7 @@ ADBEnemyBase::ADBEnemyBase()
 void ADBEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	
+
 }
 
 // Called every frame

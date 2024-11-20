@@ -49,14 +49,20 @@ protected:
 
 	uint8 bCheckMotionWarping = 0;
 
-// Stat Section
+//Stat Section
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDBCharacterStatComponent> Stat;
 
+//Item Section
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDBPlayerItemComponent> Inventory;
+
 //UI Section
 protected:
 	virtual void SetupHUDWidget(class UDBHUDWidget* InHUDWidget) override;
+	virtual void SetupInventoryWidget(class UDBInventoryWidget* InInventoryWidget) override;
 
 //UI Widget Section
 protected:

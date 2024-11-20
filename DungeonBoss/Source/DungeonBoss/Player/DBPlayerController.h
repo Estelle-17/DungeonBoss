@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "EnhancedInputLibrary.h"
 #include "DBPlayerController.generated.h"
 
 /**
@@ -23,6 +24,10 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void OnPossess(APawn* InPawn) override;
 
+//Binding Section
+public:
+	virtual void SetupInputComponent() override;
+
 //HUD Section
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
@@ -30,4 +35,16 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
 	TObjectPtr<class UDBHUDWidget> DBHUDWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
+	TSubclassOf<class UDBInventoryWidget> DBInventoryWidgetClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
+	TObjectPtr<class UDBInventoryWidget> DBInventoryWidget;
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> InventoryAction;
+
+	void PlayerInventoryAction(const FInputActionValue& Value);
 };

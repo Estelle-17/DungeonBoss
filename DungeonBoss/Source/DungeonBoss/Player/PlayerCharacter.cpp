@@ -14,6 +14,7 @@
 #include "DungeonBoss.h"
 #include "MotionWarpingComponent.h"
 #include "Stat/DBCharacterStatComponent.h"
+#include "DBPlayerItemComponent.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -207,7 +208,7 @@ void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 		{
 			PlayComboAttack();
 		}
-
+		Inventory->UpdateInventory(TEXT("HEAD_001"));
 		ServerRPCAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
 	}
 }
@@ -238,6 +239,8 @@ void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)
 		ServerRPCDodge(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
 	}
 }
+
+
 
 void APlayerCharacter::AttackHitCheck()
 {

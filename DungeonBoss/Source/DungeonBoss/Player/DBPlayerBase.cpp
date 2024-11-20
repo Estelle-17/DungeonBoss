@@ -17,6 +17,8 @@
 #include "MotionWarpingComponent.h"
 #include "Components/WidgetComponent.h"
 #include "UI/DBHUDWidget.h"
+#include "UI/DBInventoryWidget.h"
+#include "DBPlayerItemComponent.h"
 
 // Sets default values
 ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
@@ -111,8 +113,11 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 	//Stat Section
 	Stat = CreateDefaultSubobject<UDBCharacterStatComponent>(TEXT("Stat"));
 
+	//Item Section
+	Inventory = CreateDefaultSubobject<UDBPlayerItemComponent>(TEXT("Inventory"));
+
 	//Widget Section
-	HpBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("HpBar"));
+	//HpBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("HpBar"));
 
 	//Weapon Component
 	Weapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon"));
@@ -437,6 +442,14 @@ void ADBPlayerBase::SetupHUDWidget(UDBHUDWidget* InHUDWidget)
 
 		Stat->OnStatChanged.AddUObject(InHUDWidget, &UDBHUDWidget::UpdateStat);
 		Stat->OnHpChanged.AddUObject(InHUDWidget, &UDBHUDWidget::UpdateHpBar);
+	}
+}
+
+void ADBPlayerBase::SetupInventoryWidget(UDBInventoryWidget* InInventoryWidget)
+{
+	if (InInventoryWidget)
+	{
+		Inventory->OnAddItem.AddUObject(InInventoryWidget, &UDBInventoryWidget::AddEquipItem);
 	}
 }
 

@@ -4,6 +4,8 @@
 #include "Player/DBPlayerController.h"
 #include "DungeonBoss.h"
 #include "UI/DBHUDWidget.h"
+#include "UI/DBInventoryWidget.h"
+#include "EnhancedInputComponent.h"
 
 ADBPlayerController::ADBPlayerController()
 {
@@ -11,6 +13,18 @@ ADBPlayerController::ADBPlayerController()
 	if (DBHUDWidgetRef.Class)
 	{
 		DBHUDWidgetClass = DBHUDWidgetRef.Class;
+	}
+
+	static ConstructorHelpers::FClassFinder<UDBInventoryWidget> DBInventoryWidgetRef(TEXT("/Game/UI/Item/WBP_Inventory.WBP_Inventory_C"));
+	if (DBInventoryWidgetRef.Class)
+	{
+		DBInventoryWidgetClass = DBInventoryWidgetRef.Class;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> InventoryRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Inventory.IA_Player_Inventory'");
+	if (InventoryRef.Object)
+	{
+		InventoryAction = InventoryRef.Object;
 	}
 }
 
@@ -57,6 +71,12 @@ void ADBPlayerController::BeginPlay()
 	{
 		DBHUDWidget->AddToViewport();
 	}
+
+	DBInventoryWidget = CreateWidget<UDBInventoryWidget>(this, DBInventoryWidgetClass);
+	if (DBInventoryWidget)
+	{
+		DBInventoryWidget->AddToViewport();
+	}
 }
 
 void ADBPlayerController::OnPossess(APawn* InPawn)
@@ -66,4 +86,23 @@ void ADBPlayerController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 
 	DB_LOG(LogDBNetwork, Log, TEXT("%s"), TEXT("End"));
+}
+
+void ADBPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	UEnhancedInputComponent* enhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent);
+
+	enhancedInputComponent->BindAction(InventoryAction, ETriggerEvent::Triggered, this, &ADBPlayerController::PlayerInventoryAction);
+}
+
+void ADBPlayerController::PlayerInventoryAction(const FInputActionValue& Value)
+{
+	//DBInventoryWidget->AddEquipItem(TEXT("HEAD_001"));
+
+	if(DBInventoryWidget->IsVisible())
+		DBInventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+	else
+		DBInventoryWidget->SetVisibility(ESlateVisibility::Visible);
 }
