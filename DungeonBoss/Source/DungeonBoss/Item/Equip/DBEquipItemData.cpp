@@ -2,26 +2,56 @@
 
 
 #include "Item/Equip/DBEquipItemData.h"
-#include "GameData/DBGameSingleton.h"
+#include "GameData/DBItemSingleton.h"
+#include "DungeonBoss.h"
+#include "Engine/Texture2D.h"
 
 void UDBEquipItemData::SetEquipStat(FName ItemID)
 {
-	const FDBItemStat* DataTable = UDBGameSingleton::Get().GetItemStat(ItemID);
+	const FDBItemStat* DataTable = UDBItemSingleton::Get().GetItemStat(ItemID);
 
-	ItemStat.Name = DataTable->Name;
-	ItemStat.Rank = DataTable->Rank;
-	ItemStat.MaxHp = DataTable->MaxHp;
-	ItemStat.Attack = DataTable->Attack;
-	ItemStat.Defense = DataTable->Defense;
-	ItemStat.MovementSpeed = DataTable->MovementSpeed;
+	FDBItemStat Item;
+
+	Item.Name = DataTable->Name;
+	Item.ItemType = DataTable->ItemType;
+	Item.Rank = DataTable->Rank;
+	Item.MaxHp = DataTable->MaxHp;
+	Item.Attack = DataTable->Attack;
+	Item.Defense = DataTable->Defense;
+	Item.MovementSpeed = DataTable->MovementSpeed;
+	Item.TexturePath = DataTable->TexturePath;
+
+	ItemTexture = LoadObject<UTexture2D>(nullptr, *Item.TexturePath);
+
+	switch (Item.ItemType)
+	{
+		case 0:
+			Type = EEquipItemType::Weapon;
+			break;
+		case 1:
+			Type = EEquipItemType::Head;
+			break;
+		case 2:
+			Type = EEquipItemType::Body;
+			break;
+		case 3:
+			Type = EEquipItemType::Shoes;
+			break;
+	}
+
+	SetItemStat(Item);
 
 	SetEquipCharacterStat();
 }
 
 void UDBEquipItemData::SetEquipCharacterStat()
 {
-	EquipCharacterStat.MaxHp = ItemStat.MaxHp;
-	EquipCharacterStat.Attack = ItemStat.Attack;
-	EquipCharacterStat.Defense = ItemStat.Defense;
-	EquipCharacterStat.MovementSpeed = ItemStat.MovementSpeed;
+	FDBCharacterStat CharacterStat;
+
+	CharacterStat.MaxHp = ItemStat.MaxHp;
+	CharacterStat.Attack = ItemStat.Attack;
+	CharacterStat.Defense = ItemStat.Defense;
+	CharacterStat.MovementSpeed = ItemStat.MovementSpeed;
+
+	SetCharacterStat(CharacterStat);
 }

@@ -2,33 +2,139 @@
 
 #include "UI/DBInventoryWidget.h"
 #include "Components/TileView.h"
+#include "Components/Button.h"
 #include "UI/DBInventoryBlockWidget.h"
 #include "Interface/DBCharacterHUDInterface.h"
+#include "GameData/DBItemSingleton.h"
 #include "DungeonBoss.h"
 
 UDBInventoryWidget::UDBInventoryWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-
 }
 
 void UDBInventoryWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	ItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("ItemBlocks")));
-	ensure(ItemBlocks);
+//TileView Setting
+	WeaponItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("WeaponItemBlocks")));
+	ensure(WeaponItemBlocks);
 
+	HeadItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("HeadItemBlocks")));
+	ensure(HeadItemBlocks);
+	HeadItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+
+	BodyItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("BodyItemBlocks")));
+	ensure(BodyItemBlocks);
+	BodyItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+
+	ShoesItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("ShoesItemBlocks")));
+	ensure(ShoesItemBlocks);
+	ShoesItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+
+	CountableItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("CountableItemBlocks")));
+	ensure(CountableItemBlocks);
+	CountableItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+
+//Button Setting
+	WeaponItemButton = Cast<UButton>(GetWidgetFromName(TEXT("WeaponItemButton")));
+	ensure(WeaponItemBlocks);
+	WeaponItemButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::WeaponItemButtonCallback);
+
+	HeadItemButton = Cast<UButton>(GetWidgetFromName(TEXT("HeadItemButton")));
+	ensure(HeadItemButton);
+	HeadItemButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::HeadItemButtonCallback);
+
+	BodyItemButton = Cast<UButton>(GetWidgetFromName(TEXT("BodyItemButton")));
+	ensure(BodyItemButton);
+	BodyItemButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::BodyItemButtonCallback);
+
+	ShoesItemButton = Cast<UButton>(GetWidgetFromName(TEXT("ShoesItemButton")));
+	ensure(ShoesItemButton);
+	ShoesItemButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::ShoesItemButtonCallback);
+
+	CountableItemButton = Cast<UButton>(GetWidgetFromName(TEXT("CountableItemButton")));
+	ensure(CountableItemButton);
+	CountableItemButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::CountableItemButtonCallback);
+
+//Player Setting
 	IDBCharacterHUDInterface* HUDPawn = Cast<IDBCharacterHUDInterface>(GetOwningPlayerPawn());
 	if (HUDPawn)
 	{
 		HUDPawn->SetupInventoryWidget(this);
 	}
+	AddEquipItem(TEXT("HEAD_001"));
+	AddEquipItem(TEXT("HEAD_001"));
+	AddEquipItem(TEXT("BODY_001"));
+	AddEquipItem(TEXT("BODY_001"));
+	AddEquipItem(TEXT("BODY_001"));
+	AddEquipItem(TEXT("SHOES_001"));
+	AddEquipItem(TEXT("SHOES_001"));
+	AddEquipItem(TEXT("SHOES_001"));
+	AddEquipItem(TEXT("SHOES_001"));
 }
 
 void UDBInventoryWidget::AddEquipItem(FName ItemID)
 {
-	UDBInventoryBlockWidget* Item = NewObject<UDBInventoryBlockWidget>(this, UDBInventoryBlockWidget::StaticClass());
-	Item->SetEquipItem(ItemID);
+	UDBEquipItemData* EquipItemData = UDBItemSingleton::Get().AddEquipItem(ItemID);
+	UDBInventoryBlockWidget* Item = CreateWidget<UDBInventoryBlockWidget>(this, UDBInventoryBlockWidget::StaticClass());
 
-	//ItemBlocks->AddItem(Item);
+	if (Item && EquipItemData)
+	{	
+		Item->SetEquipItemData(EquipItemData);
+		switch (EquipItemData->GetEquipItemStat().ItemType)
+		{
+			case 0:
+				WeaponItemBlocks->AddItem(Item);
+				break;
+			case 1:
+				HeadItemBlocks->AddItem(Item);
+				break;
+			case 2:
+				BodyItemBlocks->AddItem(Item);
+				break;
+			case 3:
+				ShoesItemBlocks->AddItem(Item);
+				break;
+		}
+	}
+}
+
+void UDBInventoryWidget::WeaponItemButtonCallback()
+{
+	SetAllInventoryCollapsed();
+	WeaponItemBlocks->SetVisibility(ESlateVisibility::Visible);
+}
+
+void UDBInventoryWidget::HeadItemButtonCallback()
+{
+	SetAllInventoryCollapsed();
+	HeadItemBlocks->SetVisibility(ESlateVisibility::Visible);
+}
+
+void UDBInventoryWidget::BodyItemButtonCallback()
+{
+	SetAllInventoryCollapsed();
+	BodyItemBlocks->SetVisibility(ESlateVisibility::Visible);
+}
+
+void UDBInventoryWidget::ShoesItemButtonCallback()
+{
+	SetAllInventoryCollapsed();
+	ShoesItemBlocks->SetVisibility(ESlateVisibility::Visible);
+}
+
+void UDBInventoryWidget::CountableItemButtonCallback()
+{
+	SetAllInventoryCollapsed();
+	CountableItemBlocks->SetVisibility(ESlateVisibility::Visible);
+}
+
+void UDBInventoryWidget::SetAllInventoryCollapsed()
+{
+	WeaponItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+	HeadItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+	BodyItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+	ShoesItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+	CountableItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
 }

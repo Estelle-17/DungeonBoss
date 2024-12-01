@@ -173,6 +173,26 @@ public:
 	uint8 bIsDodge : 1;
 
 	void DodgeActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
+
+//ChargeAttack Section
+protected:
+	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Animation)
+	TObjectPtr<class UAnimMontage> ChargeAttackActionMontage;
+
+	void ProcessChargeAttackCommand();
+	void ChargeAttackActionBegin();
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
+	int32 CurrentChargeStack;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
+	int32 MaxChargeStack;
+
+	float LastDodgeStartTime = 0.0f;
+	float DodgeTimeDifference = 0.0f;
+	
+	uint8 bIsAttackCharging = 0;
+
 //Attack Section
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))

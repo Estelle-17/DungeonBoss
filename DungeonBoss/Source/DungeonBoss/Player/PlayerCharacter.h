@@ -44,11 +44,16 @@ protected:
 	TObjectPtr<class UInputAction> AttackAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> ChargeAttackAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> GuardOrDodgeAction;
 
 	void PlayerLook(const FInputActionValue& Value);
 	void PlayerMove(const FInputActionValue& Value);
 	void PlayerAttack(const FInputActionValue& Value);
+	void PlayerChargeAttackEnable(const FInputActionValue& Value);
+	void PlayerChargeAttackDisable(const FInputActionValue& Value);
 	void PlayerGuardOrDodge(const FInputActionValue& Value);
 
 	void PlayComboAttack();

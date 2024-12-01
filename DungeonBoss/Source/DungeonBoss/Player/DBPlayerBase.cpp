@@ -110,6 +110,13 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 		DodgeActionMontage = DodgeActionMontageRef.Object;
 	}
 
+	//ChargeAttackAction
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> ChargeAttackMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/AM_PlayerAttack.AM_PlayerAttack'"));
+	if (ChargeAttackMontageRef.Object)
+	{
+		ChargeAttackActionMontage = ChargeAttackMontageRef.Object;
+	}
+
 	//Stat Section
 	Stat = CreateDefaultSubobject<UDBCharacterStatComponent>(TEXT("Stat"));
 
@@ -353,6 +360,14 @@ void ADBPlayerBase::GuardActionBegin()
 void ADBPlayerBase::GuardActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
 	bIsGuard = false;
+}
+
+void ADBPlayerBase::ProcessChargeAttackCommand()
+{
+}
+
+void ADBPlayerBase::ChargeAttackActionBegin()
+{
 }
 
 #pragma endregion

@@ -43,6 +43,11 @@ APlayerCharacter::APlayerCharacter()
 	{
 		AttackAction = PlayerAttackRef.Object;
 	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> PlayerChargeAttackRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_ChargeAttack.IA_Player_ChargeAttack'");
+	if (PlayerChargeAttackRef.Object)
+	{
+		ChargeAttackAction = PlayerChargeAttackRef.Object;
+	}
 	static ConstructorHelpers::FObjectFinder<UInputAction> PlayerGuardOrDodgeRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Guard_Dodge.IA_Player_Guard_Dodge'");
 	if (PlayerGuardOrDodgeRef.Object)
 	{
@@ -131,6 +136,9 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	enhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerMove);
 	enhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerLook);
 	enhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerAttack);
+	enhancedInputComponent->BindAction(ChargeAttackAction, ETriggerEvent::Started, this, &APlayerCharacter::PlayerChargeAttackEnable);
+	enhancedInputComponent->BindAction(ChargeAttackAction, ETriggerEvent::Canceled, this, &APlayerCharacter::PlayerChargeAttackDisable);
+	enhancedInputComponent->BindAction(ChargeAttackAction, ETriggerEvent::Completed, this, &APlayerCharacter::PlayerChargeAttackDisable);
 	enhancedInputComponent->BindAction(GuardOrDodgeAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerGuardOrDodge);
 }
 
@@ -208,9 +216,21 @@ void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 		{
 			PlayComboAttack();
 		}
-		Inventory->UpdateInventory(TEXT("HEAD_001"));
+		Inventory->UpdateInventory(TEXT("WEAPON_001"));
 		ServerRPCAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
 	}
+}
+
+void APlayerCharacter::PlayerChargeAttackEnable(const FInputActionValue& Value)
+{
+	DB_LOG(LogDBNetwork, Log, TEXT("PlayerChargeStart"));
+	bIsAttackCharging = true;
+}
+
+void APlayerCharacter::PlayerChargeAttackDisable(const FInputActionValue& Value)
+{
+	DB_LOG(LogDBNetwork, Log, TEXT("PlayerChargeEnd"));
+	bIsAttackCharging = false;
 }
 
 void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)

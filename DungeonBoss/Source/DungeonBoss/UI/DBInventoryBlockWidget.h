@@ -19,21 +19,30 @@ class DUNGEONBOSS_API UDBInventoryBlockWidget : public UUserWidget, public IUser
 public:
 	UDBInventoryBlockWidget(const FObjectInitializer& ObjectInitializer);
 
+	FORCEINLINE void SetEquipItemData(UDBEquipItemData* EquipItem) { EquipItemData = EquipItem; }
+
+	FORCEINLINE UDBEquipItemData* GetEquipItemData() { return EquipItemData; }
+
 protected:
 	virtual void NativeConstruct() override;
 
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 	virtual void NativeOnItemSelectionChanged(bool bIsSelected) override;
 
-public:
-	void SetEquipItem(FName ItemID);
-
 protected:
+	void SetEquipItemSetting(UObject* ListItemObject);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	UDBEquipItemData* EquipItemData;
 
 	UPROPERTY()
-	TObjectPtr<class UTextBlock> ItemCount;
+	bool bIsCountableItem = 0;
 
 	UPROPERTY()
-	TObjectPtr<class UImage> ItemImage;
+	class UTextBlock* ItemCount;
+
+	UPROPERTY()
+	class UImage* ItemImage;
+
+	uint8 bIsNeedChangeTexture = 0;
 };

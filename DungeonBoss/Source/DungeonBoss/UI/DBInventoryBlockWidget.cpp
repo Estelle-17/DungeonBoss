@@ -6,14 +6,11 @@
 
 UDBInventoryBlockWidget::UDBInventoryBlockWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-
 }
 
 void UDBInventoryBlockWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-
-	EquipItemData = NewObject<UDBEquipItemData>(this, UDBEquipItemData::StaticClass());
 
 	ItemCount = Cast<UTextBlock>(GetWidgetFromName(TEXT("Count")));
 	ensure(ItemCount);
@@ -26,16 +23,40 @@ void UDBInventoryBlockWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	IUserObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
 
-	//ItemCount->SetText(FText::FromString(EquipItemData->ItemStat));
+	if (bIsCountableItem)
+	{
+
+	}
+	else
+	{
+		SetEquipItemSetting(ListItemObject);
+	}
 }
 
 void UDBInventoryBlockWidget::NativeOnItemSelectionChanged(bool bIsSelected)
 {
 	IUserObjectListEntry::NativeOnItemSelectionChanged(bIsSelected);
 
+	if (bIsSelected)
+	{
+		UE_LOG(LogTemp, Log, TEXT("%s is Select true"), *this->GetFName().ToString());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("%s is Select false"), *this->GetFName().ToString());
+	}
+	
 }
 
-void UDBInventoryBlockWidget::SetEquipItem(FName ItemID)
+void UDBInventoryBlockWidget::SetEquipItemSetting(UObject* ListItemObject)
 {
-	EquipItemData->SetEquipStat(ItemID);
+	EquipItemData = Cast<UDBInventoryBlockWidget>(ListItemObject)->GetEquipItemData();
+
+	ItemCount->SetText(FText::FromString(TEXT("")));
+	if (ItemImage)
+	{
+		FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
+		ItemImage->SetBrushFromTexture(EquipItemData->GetItemTexture());
+		ItemImage->SetDesiredSizeOverride(CurrentImageSize);
+	}
 }

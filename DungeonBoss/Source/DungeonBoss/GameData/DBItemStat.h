@@ -10,10 +10,13 @@ struct FDBItemStat : public FTableRowBase
 	GENERATED_BODY()
 
 public:
-	FDBItemStat() : Name(""), Rank(0.0f), MaxHp(0.0f), Attack(0.0f), Defense(0.0f), MovementSpeed(0.0f) {}
+	FDBItemStat() : Name(""), ItemType(0), Rank(0.0f), MaxHp(0.0f), Attack(0.0f), Defense(0.0f), MovementSpeed(0.0f), TexturePath("") {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
 	FName Name;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
+	int32 ItemType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
 	float Rank;
@@ -29,4 +32,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
 	float MovementSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
+	FString TexturePath;
 };
