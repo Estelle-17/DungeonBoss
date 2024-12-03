@@ -7,11 +7,13 @@
 #include "Interface/DBAnimationAttackInterface.h"
 #include "Interface/DBAnimationNotifyInterface.h"
 #include "Interface/DBCharacterHUDInterface.h"
+#include "Interface/DBMotionWarpingInterface.h"
 #include "GameData/DBCharacterStat.h"
 #include "DBPlayerBase.generated.h"
 
 UCLASS()
-class DUNGEONBOSS_API ADBPlayerBase : public ACharacter, public IDBAnimationNotifyInterface, public IDBAnimationAttackInterface, public IDBCharacterHUDInterface
+class DUNGEONBOSS_API ADBPlayerBase : public ACharacter, public IDBAnimationNotifyInterface, public IDBAnimationAttackInterface,
+	public IDBCharacterHUDInterface, public IDBMotionWarpingInterface
 {
 	GENERATED_BODY()
 
@@ -82,6 +84,9 @@ protected:
 	virtual void AnimationOutEnable() override;
 	virtual void AnimationOutDisable() override;
 
+//IDBMotionWarpingInterface Section
+protected:
+	virtual void UpdateMotionWarpingTargetVector() override;
 public:
 	uint8 bCanAnimationOut = 0;
 
@@ -179,8 +184,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Animation)
 	TObjectPtr<class UAnimMontage> ChargeAttackActionMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Attack, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UDAChargeAttackActionData> ChargeAttackActionData;
+
 	void ProcessChargeAttackCommand();
-	void ChargeAttackActionBegin();
+	void ChargingActionBegin();
+	void ChargeAttackBegin();
+	void SetChargeCheckTimer();
+	void ChargeCheck();
+
+	FTimerHandle ChargeTimerHandle;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
 	int32 CurrentChargeStack;
@@ -188,10 +201,16 @@ protected:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = "true"))
 	int32 MaxChargeStack;
 
-	float LastDodgeStartTime = 0.0f;
-	float DodgeTimeDifference = 0.0f;
+	float ChargingTime = 0.0f;
+	float LastChargeAttackStartTime = 0.0f;
+	float ChargeAttackTimeDifference = 0.0f;
 	
-	uint8 bIsAttackCharging = 0;
+	uint8 bIsFullCharge = 0;
+	uint8 bIsChargeAttack = 0;
+	uint8 bIsCharging = 0;
+
+public:
+	void ChargeAttackActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
 
 //Attack Section
 public:

@@ -59,6 +59,7 @@ protected:
 	void PlayComboAttack();
 	void PlayGuard();
 	void PlayDodge();
+	void StartCharge();
 
 	void AttackHitCheck();
 	void AttackHitConfirm(AActor* HitActor);
@@ -76,13 +77,13 @@ protected:
 	void ServerRPCDodge(float DodgeStartTime);
 
 	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCChargeAttack(float AttackStartTime);
+
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCNotifyHit(const FHitResult& HitResult, float HitCheckTime);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCNotifyMiss(FVector_NetQuantize TraceStart, FVector_NetQuantize TraceEnd, FVector_NetQuantizeNormal TraceDir, float HitCheckTime);
-
-	UFUNCTION(NetMulticast, Unreliable)
-	void MulticastRPCAttack();
 
 	UFUNCTION(Client, Unreliable)
 	void ClientRPCUpdateTargetVector(APlayerCharacter* CharacterToPlay, FVector MoveVector);
@@ -96,11 +97,20 @@ protected:
 	UFUNCTION(Client, Unreliable)
 	void ClientRPCProcessDodge(APlayerCharacter* CharacterToPlay);
 
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCProcessChargeAttack(APlayerCharacter* CharacterToPlay);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastRPCAttack();
+
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCGuard();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPCDodge();
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastRPCChargeAttack();
 
 //Notify Section
 protected:

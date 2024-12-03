@@ -208,6 +208,11 @@ void APlayerCharacter::PlayDodge()
 	ProcessDodgeCommand();
 }
 
+void APlayerCharacter::StartCharge()
+{
+	ProcessChargeAttackCommand();
+}
+
 void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 {
 	if (!bIsGuard && !bIsDodge || bCanAnimationOut)
@@ -224,13 +229,25 @@ void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 void APlayerCharacter::PlayerChargeAttackEnable(const FInputActionValue& Value)
 {
 	DB_LOG(LogDBNetwork, Log, TEXT("PlayerChargeStart"));
-	bIsAttackCharging = true;
+	if (!bIsCharging && !bIsChargeAttack && !bIsAttack && !bIsGuard && !bIsDodge || bCanAnimationOut)
+	{
+		bIsCharging = true;
+		if (!HasAuthority())
+		{
+			StartCharge();
+		}
+		ServerRPCChargeAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
+	}
 }
 
 void APlayerCharacter::PlayerChargeAttackDisable(const FInputActionValue& Value)
 {
 	DB_LOG(LogDBNetwork, Log, TEXT("PlayerChargeEnd"));
-	bIsAttackCharging = false;
+	if (bIsCharging)
+	{
+		ChargeAttackBegin();
+		bIsCharging = false;
+	}
 }
 
 void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)
@@ -333,6 +350,17 @@ bool APlayerCharacter::ServerRPCGuard_Validate(float GuardStartTime)
 bool APlayerCharacter::ServerRPCDodge_Validate(float DodgeStartTime)
 {
 	return true;
+}
+
+bool APlayerCharacter::ServerRPCChargeAttack_Validate(float AttackStartTime)
+{
+	if (LastChargeAttackStartTime == 0.0f)
+	{
+		return true;
+	}
+
+	return true;
+	//return (AttackStartTime - LastAttackStartTime) > AttackTime;
 }
 
 bool APlayerCharacter::ServerRPCNotifyHit_Validate(const FHitResult& HitResult, float HitCheckTime)
@@ -445,6 +473,32 @@ void APlayerCharacter::ServerRPCDodge_Implementation(float DodgeStartTime)
 	}
 }
 
+void APlayerCharacter::ServerRPCChargeAttack_Implementation(float AttackStartTime)
+{
+	ChargeAttackTimeDifference = GetWorld()->GetTimeSeconds() - AttackStartTime;
+	DB_LOG(LogDBNetwork, Log, TEXT("LagTime : %f"), ChargeAttackTimeDifference);
+
+	StartCharge();
+
+	LastChargeAttackStartTime = AttackStartTime;
+
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				APlayerCharacter* OtherPlayer = Cast<APlayerCharacter>(PlayerController->GetPawn());
+
+				if (OtherPlayer)
+				{
+					OtherPlayer->ClientRPCProcessChargeAttack(this);
+				}
+			}
+		}
+	}
+}
+
 void APlayerCharacter::ClientRPCUpdateTargetVector_Implementation(APlayerCharacter* CharacterToPlay, FVector MoveVector)
 {
 	if (CharacterToPlay)
@@ -476,6 +530,15 @@ void APlayerCharacter::ClientRPCProcessDodge_Implementation(APlayerCharacter* Ch
 		CharacterToPlay->PlayDodge();
 	}
 }
+
+void APlayerCharacter::ClientRPCProcessChargeAttack_Implementation(APlayerCharacter* CharacterToPlay)
+{
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->StartCharge();
+	}
+}
+
 void APlayerCharacter::MulticastRPCAttack_Implementation()
 {
 
@@ -488,6 +551,10 @@ void APlayerCharacter::MulticastRPCGuard_Implementation()
 void APlayerCharacter::MulticastRPCDodge_Implementation()
 {
 	
+}
+
+void APlayerCharacter::MulticastRPCChargeAttack_Implementation()
+{
 }
 
 void APlayerCharacter::ServerRPCNotifyHit_Implementation(const FHitResult& HitResult, float HitCheckTime)
@@ -522,6 +589,8 @@ void APlayerCharacter::ServerRPCNotifyMiss_Implementation(FVector_NetQuantize Tr
 
 #pragma region Collision
 
+
+
 void APlayerCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (SweepResult.GetComponent()->ComponentTags.Contains(FName(TEXT("Enemy"))) && !HitEnemies.Contains(OtherActor))
@@ -543,5 +612,7 @@ void APlayerCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 }
 
 #pragma endregion
+
+
 
 

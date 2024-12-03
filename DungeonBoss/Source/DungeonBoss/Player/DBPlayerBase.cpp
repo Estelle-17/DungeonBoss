@@ -10,6 +10,7 @@
 #include "Animation/AnimMontage.h"
 #include "GameData/DAComboActionData.h"
 #include "GameData/DAGuardActionData.h"
+#include "GameData/DAChargeAttackActionData.h"
 #include "Stat/DBCharacterStatComponent.h"
 #include "DungeonBoss.h"
 #include "Net/UnrealNetwork.h"
@@ -56,6 +57,7 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 	//Attack
 	CurrentCombo = 0;
 	MaxCombo = 3;
+	MaxChargeStack = 3;
 	bIsAttack = false;
 	HasNextCombo = false;
 	bIsGuard = false;
@@ -111,10 +113,15 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 	}
 
 	//ChargeAttackAction
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> ChargeAttackMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/AM_PlayerAttack.AM_PlayerAttack'"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> ChargeAttackMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/AM_PlayerChargeAttack.AM_PlayerChargeAttack'"));
 	if (ChargeAttackMontageRef.Object)
 	{
 		ChargeAttackActionMontage = ChargeAttackMontageRef.Object;
+	}
+	static ConstructorHelpers::FObjectFinder<UDAChargeAttackActionData> ChargeAttackActionDataRef(TEXT("/Script/DungeonBoss.DAChargeAttackActionData'/Game/GameData/DA_ChargeAttackAction.DA_ChargeAttackAction'"));
+	if (ChargeAttackActionDataRef.Object)
+	{
+		ChargeAttackActionData = ChargeAttackActionDataRef.Object;
 	}
 
 	//Stat Section
@@ -295,37 +302,6 @@ void ADBPlayerBase::ComboCheck()
 	}
 }
 
-void ADBPlayerBase::SetMotionWarpingRotation(FVector MovementVector)
-{
-	TargetVector = MovementVector;
-
-	FMotionWarpingTarget Target;
-
-	if (MovementVector == FVector3d(0, 0, 0))
-	{
-		Target.Name = "AttackTarget";
-		Target.Rotation = GetActorForwardVector().Rotation();
-
-		MotionWarpingComponent->AddOrUpdateWarpTarget(Target);
-	}
-	else
-	{
-		MovementVector.Z = 0.0f;
-
-		Target.Name = "AttackTarget";
-		Target.Rotation = MovementVector.Rotation();
-
-		MotionWarpingComponent->AddOrUpdateWarpTarget(Target);
-	}
-}
-
-void ADBPlayerBase::ResetMotionWarpingRotation()
-{
-	TargetVector = GetCharacterMovement()->GetLastInputVector();
-
-	SetMotionWarpingRotation(TargetVector);
-}
-
 #pragma endregion
 
 #pragma region Guard
@@ -360,14 +336,6 @@ void ADBPlayerBase::GuardActionBegin()
 void ADBPlayerBase::GuardActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
 	bIsGuard = false;
-}
-
-void ADBPlayerBase::ProcessChargeAttackCommand()
-{
-}
-
-void ADBPlayerBase::ChargeAttackActionBegin()
-{
 }
 
 #pragma endregion
@@ -422,6 +390,155 @@ void ADBPlayerBase::DodgeActionEnd(UAnimMontage* TargetMontage, bool IsProperlyE
 
 #pragma endregion
 
+#pragma region ChargeAttack
+
+void ADBPlayerBase::ProcessChargeAttackCommand()
+{
+	if (bIsChargeAttack)
+	{
+		return;
+	}
+
+	ChargingActionBegin();
+}
+//우클릭을 누르는 동안 차징 시작
+void ADBPlayerBase::ChargingActionBegin()
+{
+	CurrentChargeStack = 0;
+
+	const float AttackSpeedRate = 1.0f;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_Play(ChargeAttackActionMontage, AttackSpeedRate);
+
+	FOnMontageEnded EndDelegate;
+	EndDelegate.BindUObject(this, &ADBPlayerBase::ChargeAttackActionEnd);
+	AnimInstance->Montage_SetEndDelegate(EndDelegate, ChargeAttackActionMontage);
+
+	bIsChargeAttack = true;
+	ChargeTimerHandle.Invalidate();
+	SetChargeCheckTimer();
+}
+//차징된 양을 기준으로 공격 애니메이션 출력
+void ADBPlayerBase::ChargeAttackBegin()
+{
+	if (CurrentChargeStack == 0)
+	{
+		/*MontageAnimationOut();
+		ChargeTimerHandle.Invalidate();
+		bIsChargeAttack = false;*/
+		return;
+	}
+
+	bIsFullCharge = false;
+	bIsCharging = false;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	CurrentChargeStack = FMath::Clamp(CurrentChargeStack, 1, ChargeAttackActionData->MaxChargeStack);
+	FName NextSection = *FString::Printf(TEXT("%s%d"), *ChargeAttackActionData->SectionPrefix, CurrentChargeStack);
+	AnimInstance->Montage_JumpToSection(NextSection, ChargeAttackActionMontage);
+
+	CurrentChargeStack = -1;
+	ChargeTimerHandle.Invalidate();
+}
+
+void ADBPlayerBase::SetChargeCheckTimer()
+{
+	ensure(ChargeAttackActionData->RequireChargeFrame.IsValidIndex(CurrentChargeStack));
+
+	const float AttackSpeedRate = 1.0f;
+
+	//차징이 완료되는 시간 체크
+	float NextComboEffectiveTime = (ChargeAttackActionData->RequireChargeFrame[CurrentChargeStack] / ChargeAttackActionData->FrameRate) / AttackSpeedRate;
+	ChargingTime = NextComboEffectiveTime;
+
+	//클라이언트와 서버 간의 핑 차이 계산
+	ChargeAttackTimeDifference = FMath::Clamp(ChargeAttackTimeDifference, 0.0f, ChargingTime - 0.01f);
+	if (ChargingTime - ChargeAttackTimeDifference > 0.0f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(ChargeTimerHandle, this, &ADBPlayerBase::ChargeCheck, ChargingTime, false);
+	}
+}
+
+void ADBPlayerBase::ChargeCheck()
+{
+	//처음 1차징동안 입력이 끝났을 경우
+	if (CurrentChargeStack == 0 && !bIsCharging)
+	{
+		CurrentChargeStack = FMath::Clamp(CurrentChargeStack + 1, 1, ChargeAttackActionData->MaxChargeStack);
+		DB_LOG(LogDBNetwork, Log, TEXT("CurrnetChargeStack : %d"), CurrentChargeStack);
+		ChargeTimerHandle.Invalidate();
+		ChargeAttackBegin();
+		return;
+	}
+
+	if (bIsCharging)
+	{
+		if (bIsFullCharge)
+		{
+			ChargeAttackBegin();
+			return;
+		}
+
+		CurrentChargeStack = FMath::Clamp(CurrentChargeStack + 1, 1, ChargeAttackActionData->MaxChargeStack);
+		DB_LOG(LogDBNetwork, Log, TEXT("CurrnetChargeStack : %d"), CurrentChargeStack);
+		ChargeTimerHandle.Invalidate();
+		if (CurrentChargeStack <= 3)
+		{
+			if (CurrentChargeStack == ChargeAttackActionData->MaxChargeStack)
+			{
+					bIsFullCharge = true;
+			}
+			SetChargeCheckTimer();
+		}
+	}
+}
+
+void ADBPlayerBase::ChargeAttackActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
+{
+	ChargeTimerHandle.Invalidate();
+
+	//차징 공격 중 풀고 누르면 다시 공격되니 수정 요함
+	CurrentChargeStack = 0;
+	bIsChargeAttack = false;
+}
+
+#pragma endregion
+
+#pragma region MotionWarping
+
+void ADBPlayerBase::SetMotionWarpingRotation(FVector MovementVector)
+{
+	TargetVector = MovementVector;
+
+	FMotionWarpingTarget Target;
+
+	if (MovementVector == FVector3d(0, 0, 0))
+	{
+		Target.Name = "AttackTarget";
+		Target.Rotation = GetActorForwardVector().Rotation();
+
+		MotionWarpingComponent->AddOrUpdateWarpTarget(Target);
+	}
+	else
+	{
+		MovementVector.Z = 0.0f;
+
+		Target.Name = "AttackTarget";
+		Target.Rotation = MovementVector.Rotation();
+
+		MotionWarpingComponent->AddOrUpdateWarpTarget(Target);
+	}
+}
+
+void ADBPlayerBase::ResetMotionWarpingRotation()
+{
+	TargetVector = GetCharacterMovement()->GetLastInputVector();
+
+	SetMotionWarpingRotation(TargetVector);
+}
+
+#pragma endregion
+
 #pragma region AttackCheck
 
 void ADBPlayerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -434,6 +551,8 @@ void ADBPlayerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	//DOREPLIFETIME(ADBPlayerBase, bIsDodge);
 	//DOREPLIFETIME(ADBPlayerBase, bCanAnimationOut);
 }
+
+
 
 float ADBPlayerBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
@@ -518,6 +637,11 @@ void ADBPlayerBase::AnimationOutEnable()
 void ADBPlayerBase::AnimationOutDisable()
 {
 	bCanAnimationOut = false;
+}
+
+void ADBPlayerBase::UpdateMotionWarpingTargetVector()
+{
+	bCheckMotionWarping = true;
 }
 
 #pragma endregion
