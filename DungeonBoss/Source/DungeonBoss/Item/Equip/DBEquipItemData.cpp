@@ -8,7 +8,7 @@
 
 void UDBEquipItemData::SetEquipStat(FName ItemID)
 {
-	const FDBItemStat* DataTable = UDBItemSingleton::Get().GetItemStat(ItemID);
+	const FDBItemStat* DataTable = UDBItemSingleton::Get().GetEquipItemStat(ItemID);
 
 	FDBItemStat Item;
 
@@ -26,16 +26,16 @@ void UDBEquipItemData::SetEquipStat(FName ItemID)
 	switch (Item.ItemType)
 	{
 		case 0:
-			Type = EEquipItemType::Weapon;
+			EquipItemType = EEquipItemType::Weapon;
 			break;
 		case 1:
-			Type = EEquipItemType::Head;
+			EquipItemType = EEquipItemType::Head;
 			break;
 		case 2:
-			Type = EEquipItemType::Body;
+			EquipItemType = EEquipItemType::Body;
 			break;
 		case 3:
-			Type = EEquipItemType::Shoes;
+			EquipItemType = EEquipItemType::Shoes;
 			break;
 	}
 

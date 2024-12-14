@@ -22,6 +22,7 @@ protected:
 
 public:
 	void AddEquipItem(FName ItemID);
+	void AddCountableItem(FName ItemID, int32 ItemCount);
 
 protected:
 //TileView Section

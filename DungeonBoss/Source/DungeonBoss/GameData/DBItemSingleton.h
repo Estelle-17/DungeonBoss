@@ -7,6 +7,7 @@
 #include "DBItemStat.h"
 #include "DBCharacterStat.h"
 #include "Item/Equip/DBEquipItemData.h"
+#include "Item/DBCountableItemData.h"
 #include "DBItemSingleton.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogDBItemSingleton, Error, All);
@@ -24,15 +25,24 @@ public:
 	static UDBItemSingleton& Get();
 
 public:
-	FORCEINLINE FDBItemStat* GetItemStat(FName ItemID) { return ItemDataTable->FindRow<FDBItemStat>(ItemID, TEXT("")); }
+	FORCEINLINE FDBItemStat* GetEquipItemStat(FName ItemID) { return EquipItemDataTable->FindRow<FDBItemStat>(ItemID, TEXT("")); }
 	FORCEINLINE const TArray<UDBEquipItemData*> GetEquipItems(FName ItemID) { return EquipItems; }
+
+	FORCEINLINE FDBMaterialItemStat* GetCountableItemStat(FName ItemID) { return CountableItemDataTable->FindRow<FDBMaterialItemStat>(ItemID, TEXT("")); }
+	//FORCEINLINE const UDBCountableItemData* GetCountableItem(FName ItemID) { return CountableItems.Find(ItemID)->CountableItem; }
 
 	UDBEquipItemData* AddEquipItem(FName ItemID);
 	void RemoveEquipItem(UDBEquipItemData* EquipItemData);
-	void AddCountableItem(FName ItemID);
+	UDBCountableItemData* AddCountableItem(FName ItemID, int32 ItemCount);
 
 private:
-	class UDataTable* ItemDataTable;
+	class UDataTable* EquipItemDataTable;
 
+	UPROPERTY(EditAnywhere)
 	TArray<UDBEquipItemData*> EquipItems;
+
+	class UDataTable* CountableItemDataTable;
+
+	UPROPERTY(EditAnywhere)
+	TMap<FName, UDBCountableItemData*> CountableItems;
 };

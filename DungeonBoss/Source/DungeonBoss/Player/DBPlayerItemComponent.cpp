@@ -15,7 +15,12 @@ void UDBPlayerItemComponent::BeginPlay()
 	
 }
 
-void UDBPlayerItemComponent::UpdateInventory(FName ItemID)
+void UDBPlayerItemComponent::UpdateCountableItem(FName ItemID, int32 ItemCount)
 {
-	OnAddItem.Broadcast(ItemID);
+	OnAddCountableItem.Broadcast(ItemID, ItemCount);
+}
+
+void UDBPlayerItemComponent::UpdateEquipItem(FName ItemID)
+{
+	OnAddEquipItem.Broadcast(ItemID);
 }

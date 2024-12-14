@@ -60,6 +60,7 @@ protected:
 	void PlayGuard();
 	void PlayDodge();
 	void StartCharge();
+	void EndCharge();
 
 	void AttackHitCheck();
 	void AttackHitConfirm(AActor* HitActor);
@@ -78,6 +79,9 @@ protected:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCChargeAttack(float AttackStartTime);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCEndCharge();
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCNotifyHit(const FHitResult& HitResult, float HitCheckTime);
@@ -99,6 +103,9 @@ protected:
 
 	UFUNCTION(Client, Unreliable)
 	void ClientRPCProcessChargeAttack(APlayerCharacter* CharacterToPlay);
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCEndCharge(APlayerCharacter* CharacterToPlay);
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCAttack();

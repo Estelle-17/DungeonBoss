@@ -15,6 +15,12 @@ enum class EEquipItemType : uint8
 	Shoes
 };
 
+UENUM(BlueprintType)
+enum class ECountableItemType : uint8
+{
+	Material = 0,
+};
+
 /**
  * 
  */
@@ -25,5 +31,8 @@ class DUNGEONBOSS_API UDBItemData : public UPrimaryDataAsset
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Type)
-	EEquipItemType Type;
+	EEquipItemType EquipItemType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Type)
+	ECountableItemType CountableItemType;
 };

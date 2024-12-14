@@ -583,7 +583,8 @@ void ADBPlayerBase::SetupInventoryWidget(UDBInventoryWidget* InInventoryWidget)
 {
 	if (InInventoryWidget)
 	{
-		Inventory->OnAddItem.AddUObject(InInventoryWidget, &UDBInventoryWidget::AddEquipItem);
+		Inventory->OnAddEquipItem.AddUObject(InInventoryWidget, &UDBInventoryWidget::AddEquipItem);
+		Inventory->OnAddCountableItem.AddUObject(InInventoryWidget, &UDBInventoryWidget::AddCountableItem);
 	}
 }
 

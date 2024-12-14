@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/IUserObjectListEntry.h"
 #include "Item/Equip/DBEquipItemData.h"
+#include "Item/DBCountableItemData.h"
 #include "DBInventoryBlockWidget.generated.h"
 
 /**
@@ -20,8 +21,14 @@ public:
 	UDBInventoryBlockWidget(const FObjectInitializer& ObjectInitializer);
 
 	FORCEINLINE void SetEquipItemData(UDBEquipItemData* EquipItem) { EquipItemData = EquipItem; }
-
 	FORCEINLINE UDBEquipItemData* GetEquipItemData() { return EquipItemData; }
+		
+	FORCEINLINE void SetCountableItemData(UDBCountableItemData* CountableItem) { CountableItemData = CountableItem; }
+	FORCEINLINE UDBCountableItemData* GetCountableItemData() { return CountableItemData; }
+
+public:
+	void SetEquipItemSetting(UObject* ListItemObject);
+	void SetCountableItemSetting();
 
 protected:
 	virtual void NativeConstruct() override;
@@ -30,19 +37,15 @@ protected:
 	virtual void NativeOnItemSelectionChanged(bool bIsSelected) override;
 
 protected:
-	void SetEquipItemSetting(UObject* ListItemObject);
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	UDBEquipItemData* EquipItemData;
 
-	UPROPERTY()
-	bool bIsCountableItem = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Stat, Meta = (AllowPrivateAccess = "true"))
+	UDBCountableItemData* CountableItemData;
 
 	UPROPERTY()
 	class UTextBlock* ItemCount;
 
 	UPROPERTY()
 	class UImage* ItemImage;
-
-	uint8 bIsNeedChangeTexture = 0;
 };

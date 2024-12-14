@@ -100,6 +100,30 @@ void UDBInventoryWidget::AddEquipItem(FName ItemID)
 	}
 }
 
+void UDBInventoryWidget::AddCountableItem(FName ItemID, int32 ItemCount)
+{
+	UDBCountableItemData* CountableItemData = UDBItemSingleton::Get().AddCountableItem(ItemID, ItemCount);
+
+	UE_LOG(LogTemp, Log, TEXT("CountableItemData : %d"), CountableItemData->GetUniqueID());
+	for (UObject* obj : CountableItemBlocks->GetListItems())
+	{
+		UE_LOG(LogTemp, Log, TEXT("CountableItemBlocks : %d"), obj->GetUniqueID());
+	}
+
+	//아이템이 인벤토리 블록으로 생성되어 있을 경우
+	if (CountableItemBlocks->GetListItems().Contains(CountableItemData))
+	{
+		CountableItemData->SetItemCount();
+		UE_LOG(LogTemp, Log, TEXT("Contain Item!"));
+	}
+	else
+	{
+		//UDBInventoryBlockWidget* Item = CreateWidget<UDBInventoryBlockWidget>(this, UDBInventoryBlockWidget::StaticClass());
+		//Item->SetCountableItemData(CountableItemData);
+		CountableItemBlocks->AddItem(CountableItemData);
+	}
+}
+
 void UDBInventoryWidget::WeaponItemButtonCallback()
 {
 	SetAllInventoryCollapsed();

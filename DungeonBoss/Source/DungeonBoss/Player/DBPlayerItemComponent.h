@@ -7,7 +7,8 @@
 #include "Item/Equip/DBEquipItemData.h"
 #include "DBPlayerItemComponent.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnAddItemDelegate, FName /*ItemID*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAddEquipItemDelegate, FName /*ItemID*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnAddCountableItemDelegate, FName /*ItemID*/, int32 /*ItemCount*/);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class DUNGEONBOSS_API UDBPlayerItemComponent : public UActorComponent
@@ -23,6 +24,8 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	FOnAddItemDelegate OnAddItem;
-	void UpdateInventory(FName ItemID);
+	FOnAddEquipItemDelegate OnAddEquipItem;
+	FOnAddCountableItemDelegate OnAddCountableItem;
+	void UpdateEquipItem(FName ItemID);
+	void UpdateCountableItem(FName ItemID, int32 ItemCount);
 };

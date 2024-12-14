@@ -22,10 +22,18 @@ void UDBInventoryBlockWidget::NativeConstruct()
 void UDBInventoryBlockWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	IUserObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
-
-	if (bIsCountableItem)
+	if (!CountableItemData && !EquipItemData)
 	{
+		CountableItemData = Cast<UDBCountableItemData>(ListItemObject);
+		if (CountableItemData)
+		{
+			CountableItemData->OnSetItemCount.AddUObject(this, &UDBInventoryBlockWidget::SetCountableItemSetting);
+		}
+	}
 
+	if (CountableItemData)
+	{
+		SetCountableItemSetting();
 	}
 	else
 	{
@@ -51,12 +59,27 @@ void UDBInventoryBlockWidget::NativeOnItemSelectionChanged(bool bIsSelected)
 void UDBInventoryBlockWidget::SetEquipItemSetting(UObject* ListItemObject)
 {
 	EquipItemData = Cast<UDBInventoryBlockWidget>(ListItemObject)->GetEquipItemData();
+	ensure(EquipItemData);
 
 	ItemCount->SetText(FText::FromString(TEXT("")));
 	if (ItemImage)
 	{
 		FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
 		ItemImage->SetBrushFromTexture(EquipItemData->GetItemTexture());
+		ItemImage->SetDesiredSizeOverride(CurrentImageSize);
+	}
+}
+
+void UDBInventoryBlockWidget::SetCountableItemSetting()
+{
+	if (ItemCount)
+	{
+		ItemCount->SetText(FText::FromString(FString::Printf(TEXT("%d"), CountableItemData->GetItenCount())));
+	}
+	if (ItemImage)
+	{
+		FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
+		ItemImage->SetBrushFromTexture(CountableItemData->GetItemTexture());
 		ItemImage->SetDesiredSizeOverride(CurrentImageSize);
 	}
 }

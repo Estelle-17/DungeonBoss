@@ -210,18 +210,26 @@ void APlayerCharacter::PlayDodge()
 
 void APlayerCharacter::StartCharge()
 {
+	bIsCharging = true;
 	ProcessChargeAttackCommand();
+}
+
+void APlayerCharacter::EndCharge()
+{
+	ChargeAttackBegin();
+	bIsCharging = false;
 }
 
 void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 {
-	if (!bIsGuard && !bIsDodge || bCanAnimationOut)
+	if (!bIsGuard && !bIsDodge && !bIsChargeAttack || bCanAnimationOut)
 	{
 		if (!HasAuthority())
 		{
 			PlayComboAttack();
 		}
-		Inventory->UpdateInventory(TEXT("WEAPON_001"));
+		Inventory->UpdateEquipItem(TEXT("WEAPON_001"));
+		Inventory->UpdateCountableItem(TEXT("BOSS_01_01"), 1);
 		ServerRPCAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
 	}
 }
@@ -231,7 +239,15 @@ void APlayerCharacter::PlayerChargeAttackEnable(const FInputActionValue& Value)
 	DB_LOG(LogDBNetwork, Log, TEXT("PlayerChargeStart"));
 	if (!bIsCharging && !bIsChargeAttack && !bIsAttack && !bIsGuard && !bIsDodge || bCanAnimationOut)
 	{
-		bIsCharging = true;
+		if (!HasAuthority())
+		{
+			StartCharge();
+		}
+		ServerRPCChargeAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
+	}
+
+	if (bIsChargeAttack && CurrentChargeStack == 0)
+	{
 		if (!HasAuthority())
 		{
 			StartCharge();
@@ -245,8 +261,11 @@ void APlayerCharacter::PlayerChargeAttackDisable(const FInputActionValue& Value)
 	DB_LOG(LogDBNetwork, Log, TEXT("PlayerChargeEnd"));
 	if (bIsCharging)
 	{
-		ChargeAttackBegin();
-		bIsCharging = false;
+		if (!HasAuthority())
+		{
+			EndCharge();
+		}
+		ServerRPCEndCharge();
 	}
 }
 
@@ -266,7 +285,7 @@ void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)
 
 		ServerRPCGuard(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
 	}
-	else if (!bIsGuard && !bIsDodge)	//Dodge Section
+	else if (!bIsGuard && !bIsDodge && !bIsChargeAttack)	//Dodge Section
 	{
 		if (!HasAuthority())
 		{
@@ -361,6 +380,11 @@ bool APlayerCharacter::ServerRPCChargeAttack_Validate(float AttackStartTime)
 
 	return true;
 	//return (AttackStartTime - LastAttackStartTime) > AttackTime;
+}
+
+bool APlayerCharacter::ServerRPCEndCharge_Validate()
+{
+	return true;
 }
 
 bool APlayerCharacter::ServerRPCNotifyHit_Validate(const FHitResult& HitResult, float HitCheckTime)
@@ -499,6 +523,28 @@ void APlayerCharacter::ServerRPCChargeAttack_Implementation(float AttackStartTim
 	}
 }
 
+
+void APlayerCharacter::ServerRPCEndCharge_Implementation()
+{
+	EndCharge();
+
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				APlayerCharacter* OtherPlayer = Cast<APlayerCharacter>(PlayerController->GetPawn());
+
+				if (OtherPlayer)
+				{
+					OtherPlayer->ClientRPCEndCharge(this);
+				}
+			}
+		}
+	}
+}
+
 void APlayerCharacter::ClientRPCUpdateTargetVector_Implementation(APlayerCharacter* CharacterToPlay, FVector MoveVector)
 {
 	if (CharacterToPlay)
@@ -536,6 +582,14 @@ void APlayerCharacter::ClientRPCProcessChargeAttack_Implementation(APlayerCharac
 	if (CharacterToPlay)
 	{
 		CharacterToPlay->StartCharge();
+	}
+}
+
+void APlayerCharacter::ClientRPCEndCharge_Implementation(APlayerCharacter* CharacterToPlay)
+{
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->EndCharge();
 	}
 }
 
@@ -593,7 +647,7 @@ void APlayerCharacter::ServerRPCNotifyMiss_Implementation(FVector_NetQuantize Tr
 
 void APlayerCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (SweepResult.GetComponent()->ComponentTags.Contains(FName(TEXT("Enemy"))) && !HitEnemies.Contains(OtherActor))
+	if (SweepResult.GetComponent()->ComponentTags.Contains(FName(TEXT("Enemy"))) && !HitEnemies.Contains(OtherActor) && IsLocallyControlled())
 	{
 		DB_LOG(LogDBNetwork, Log, TEXT("Find Enemy!"));
 
@@ -612,7 +666,3 @@ void APlayerCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 }
 
 #pragma endregion
-
-
-
-

@@ -66,17 +66,24 @@ void ADBPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	DBHUDWidget = CreateWidget<UDBHUDWidget>(this, DBHUDWidgetClass);
-	if (DBHUDWidget)
+	DB_LOG(LogDBNetwork, Log, TEXT("%s"), TEXT("Begin"));
+
+	if (IsLocalPlayerController())
 	{
-		DBHUDWidget->AddToViewport();
+		DBHUDWidget = CreateWidget<UDBHUDWidget>(this, DBHUDWidgetClass);
+		if (DBHUDWidget)
+		{
+			DBHUDWidget->AddToViewport();
+		}
+
+		DBInventoryWidget = CreateWidget<UDBInventoryWidget>(this, DBInventoryWidgetClass);
+		if (DBInventoryWidget)
+		{
+			DBInventoryWidget->AddToViewport();
+		}
 	}
 
-	DBInventoryWidget = CreateWidget<UDBInventoryWidget>(this, DBInventoryWidgetClass);
-	if (DBInventoryWidget)
-	{
-		DBInventoryWidget->AddToViewport();
-	}
+	DB_LOG(LogDBNetwork, Log, TEXT("%s"), TEXT("End"));
 }
 
 void ADBPlayerController::OnPossess(APawn* InPawn)
