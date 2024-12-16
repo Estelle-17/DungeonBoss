@@ -29,6 +29,8 @@ void UDBInventoryBlockWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 		{
 			CountableItemData->OnSetItemCount.AddUObject(this, &UDBInventoryBlockWidget::SetCountableItemSetting);
 		}
+
+		EquipItemData = Cast<UDBEquipItemData>(ListItemObject);
 	}
 
 	if (CountableItemData)
@@ -37,7 +39,7 @@ void UDBInventoryBlockWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 	}
 	else
 	{
-		SetEquipItemSetting(ListItemObject);
+		SetEquipItemSetting();
 	}
 }
 
@@ -56,9 +58,8 @@ void UDBInventoryBlockWidget::NativeOnItemSelectionChanged(bool bIsSelected)
 	
 }
 
-void UDBInventoryBlockWidget::SetEquipItemSetting(UObject* ListItemObject)
+void UDBInventoryBlockWidget::SetEquipItemSetting()
 {
-	EquipItemData = Cast<UDBInventoryBlockWidget>(ListItemObject)->GetEquipItemData();
 	ensure(EquipItemData);
 
 	ItemCount->SetText(FText::FromString(TEXT("")));

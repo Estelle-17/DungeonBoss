@@ -108,8 +108,14 @@ void ADBPlayerController::PlayerInventoryAction(const FInputActionValue& Value)
 {
 	//DBInventoryWidget->AddEquipItem(TEXT("HEAD_001"));
 
-	if(DBInventoryWidget->IsVisible())
+	if (DBInventoryWidget->IsVisible())
+	{
 		DBInventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+		bShowMouseCursor = false;		
+	}
 	else
+	{
 		DBInventoryWidget->SetVisibility(ESlateVisibility::Visible);
+		bShowMouseCursor = true;
+	}
 }

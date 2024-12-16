@@ -77,24 +77,22 @@ void UDBInventoryWidget::NativeConstruct()
 void UDBInventoryWidget::AddEquipItem(FName ItemID)
 {
 	UDBEquipItemData* EquipItemData = UDBItemSingleton::Get().AddEquipItem(ItemID);
-	UDBInventoryBlockWidget* Item = CreateWidget<UDBInventoryBlockWidget>(this, UDBInventoryBlockWidget::StaticClass());
 
-	if (Item && EquipItemData)
+	if (EquipItemData)
 	{	
-		Item->SetEquipItemData(EquipItemData);
 		switch (EquipItemData->GetEquipItemStat().ItemType)
 		{
 			case 0:
-				WeaponItemBlocks->AddItem(Item);
+				WeaponItemBlocks->AddItem(EquipItemData);
 				break;
 			case 1:
-				HeadItemBlocks->AddItem(Item);
+				HeadItemBlocks->AddItem(EquipItemData);
 				break;
 			case 2:
-				BodyItemBlocks->AddItem(Item);
+				BodyItemBlocks->AddItem(EquipItemData);
 				break;
 			case 3:
-				ShoesItemBlocks->AddItem(Item);
+				ShoesItemBlocks->AddItem(EquipItemData);
 				break;
 		}
 	}
@@ -118,8 +116,6 @@ void UDBInventoryWidget::AddCountableItem(FName ItemID, int32 ItemCount)
 	}
 	else
 	{
-		//UDBInventoryBlockWidget* Item = CreateWidget<UDBInventoryBlockWidget>(this, UDBInventoryBlockWidget::StaticClass());
-		//Item->SetCountableItemData(CountableItemData);
 		CountableItemBlocks->AddItem(CountableItemData);
 	}
 }

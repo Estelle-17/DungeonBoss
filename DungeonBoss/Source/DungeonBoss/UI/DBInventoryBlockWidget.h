@@ -27,7 +27,7 @@ public:
 	FORCEINLINE UDBCountableItemData* GetCountableItemData() { return CountableItemData; }
 
 public:
-	void SetEquipItemSetting(UObject* ListItemObject);
+	void SetEquipItemSetting();
 	void SetCountableItemSetting();
 
 protected:
