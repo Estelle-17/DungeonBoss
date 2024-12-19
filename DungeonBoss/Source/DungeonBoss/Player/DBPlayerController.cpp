@@ -5,6 +5,7 @@
 #include "DungeonBoss.h"
 #include "UI/DBHUDWidget.h"
 #include "UI/DBInventoryWidget.h"
+#include "UI/DBMultiUIWidget.h"
 #include "EnhancedInputComponent.h"
 
 ADBPlayerController::ADBPlayerController()
@@ -21,11 +22,21 @@ ADBPlayerController::ADBPlayerController()
 		DBInventoryWidgetClass = DBInventoryWidgetRef.Class;
 	}
 
+	static ConstructorHelpers::FClassFinder<UDBMultiUIWidget> DBMultiUIWidgetRef(TEXT("/Game/UI/WBP_DBMultiUI.WBP_DBMultiUI_C"));
+	if (DBMultiUIWidgetRef.Class)
+	{
+		DBMultiUIWidgetClass = DBMultiUIWidgetRef.Class;
+	}
+
 	static ConstructorHelpers::FObjectFinder<UInputAction> InventoryRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Inventory.IA_Player_Inventory'");
 	if (InventoryRef.Object)
 	{
 		InventoryAction = InventoryRef.Object;
 	}
+
+	NetworkSetting = CreateDefaultSubobject<ADBNetworkSetting>(TEXT("NetworkSetting"));
+
+	bShowMouseCursor = false;
 }
 
 //네트워크와 무관하게 액터를 초기화할 때 사용
@@ -80,6 +91,15 @@ void ADBPlayerController::BeginPlay()
 		if (DBInventoryWidget)
 		{
 			DBInventoryWidget->AddToViewport();
+			DBInventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
+		DBMultiUIWidget = CreateWidget<UDBMultiUIWidget>(this, DBMultiUIWidgetClass);
+		if (DBMultiUIWidget)
+		{
+			DBMultiUIWidget->AddToViewport();
+			DBMultiUIWidget->BindingButtons(NetworkSetting);
+			//DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
 

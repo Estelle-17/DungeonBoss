@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "EnhancedInputLibrary.h"
+#include "GM/DBNetworkSetting.h"
 #include "DBPlayerController.generated.h"
 
 /**
@@ -42,9 +43,21 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
 	TObjectPtr<class UDBInventoryWidget> DBInventoryWidget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
+	TSubclassOf<class UDBMultiUIWidget> DBMultiUIWidgetClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
+	TObjectPtr<class UDBMultiUIWidget> DBMultiUIWidget;
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InventoryAction;
 
 	void PlayerInventoryAction(const FInputActionValue& Value);
+
+//Network Section
+protected:
+	UPROPERTY()
+	TObjectPtr<ADBNetworkSetting> NetworkSetting;
+
 };
