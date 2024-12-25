@@ -28,30 +28,17 @@ public:
 	void DestroyRoomSection();
 
 	UFUNCTION(BlueprintCallable)
-	void FindRoomSection();
+	void FindRoomSection(FString Address);
 
-	void OnCreateSessionComplete(FName SessionName, bool bWasSuccssful);
+	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+	void OnFindSessionsComplete(bool bWasSuccessful);
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 
-protected:
-	UPROPERTY()
-	TObjectPtr<class UCheckBox> PrivateCheck;
-
-	UPROPERTY()
-	TObjectPtr<class UEditableTextBox> CreateRoomText;
-
-	UPROPERTY()
-	TObjectPtr<class UEditableTextBox> JoinRoomText;
-
-	UPROPERTY()
-	TObjectPtr<class UButton> CreateRoomButton;
-
-	UPROPERTY()
-	TObjectPtr<class UButton> JoinRoomButton;
-
-	UPROPERTY()
-	TObjectPtr<class UButton> JoinRandomRoomButton;
-
+private:
 	IOnlineSessionPtr OnlineSessionInterface;
+	TSharedPtr<class FOnlineSessionSearch> SessionSearch;
 
 	FOnCreateSessionCompleteDelegate OnCreateSessionCompleteDelegate;
+	FOnFindSessionsCompleteDelegate OnFindSessionsCompleteDelegate;
+	FOnJoinSessionCompleteDelegate OnJoinSessionCompleteDelegate;
 };

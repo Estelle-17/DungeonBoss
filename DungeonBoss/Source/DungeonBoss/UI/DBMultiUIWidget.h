@@ -7,6 +7,8 @@
 #include "GM/DBNetworkSetting.h"
 #include "DBMultiUIWidget.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinGameServerDelegate, FString /*Address*/);
+
 /**
  * 
  */
@@ -24,7 +26,9 @@ protected:
 public:
 	void BindingButtons(ADBNetworkSetting* NetworkSetting);
 
-protected:
+	UFUNCTION(BlueprintCallable)
+	void JoinGameServer();
+
 	UPROPERTY()
 	TObjectPtr<class UCheckBox> PrivateCheck;
 
@@ -33,6 +37,9 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<class UEditableTextBox> JoinRoomText;
+
+protected:
+	void SetPlayerLocalAddress();
 
 	UPROPERTY()
 	TObjectPtr<class UButton> CreateRoomButton;
@@ -45,4 +52,9 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<class UButton> JoinRandomRoomButton;
+
+	UPROPERTY()
+	TObjectPtr<class UTextBlock> AddressText;
+
+	FOnJoinGameServerDelegate OnJoinGameServerDelegate;
 };
