@@ -19,6 +19,7 @@ void UDBInventoryWidget::NativeConstruct()
 //TileView Setting
 	WeaponItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("WeaponItemBlocks")));
 	ensure(WeaponItemBlocks);
+	WeaponItemBlocks->OnItemClicked().AddUObject(this, &UDBInventoryWidget::InventoryItemClicked);
 
 	HeadItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("HeadItemBlocks")));
 	ensure(HeadItemBlocks);
@@ -157,4 +158,28 @@ void UDBInventoryWidget::SetAllInventoryCollapsed()
 	BodyItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
 	ShoesItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
 	CountableItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void UDBInventoryWidget::InventoryItemClicked(UObject* Item)
+{
+	UE_LOG(LogTemp, Log, TEXT("Is Clicked! : %s"), *Item->GetFName().ToString())
+}
+
+FReply UDBInventoryWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	FEventReply Reply;
+	Reply.NativeReply = Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+
+	//좌클릭 입력이 들어왔을 경우
+	if (InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Is Clicked LeftMouseButton"));
+	}
+	//우클릭 입력이 들어왔을 경우
+	/*if (InMouseEvent.IsMouseButtonDown(EKeys::RightMouseButton))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Is Clicked RightMouseButton"));
+	}*/
+
+	return Reply.NativeReply;
 }

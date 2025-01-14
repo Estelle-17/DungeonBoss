@@ -65,7 +65,7 @@ protected:
 protected:
 	virtual void SetupHUDWidget(class UDBHUDWidget* InHUDWidget) override;
 	virtual void SetupInventoryWidget(class UDBInventoryWidget* InInventoryWidget) override;
-
+	
 //UI Widget Section
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Widget, Meta = (AllowPrivateAccess = "true"))
@@ -89,6 +89,21 @@ protected:
 	virtual void UpdateMotionWarpingTargetVector() override;
 public:
 	uint8 bCanAnimationOut = 0;
+
+//Collider Section
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collision, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UBoxComponent> WeaponCollision;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Mesh)
+	TObjectPtr<class USphereComponent> SearchCollision;
+
+private:
+	UFUNCTION()
+	void OnSearchOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnSearchOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 //ComboAttack Section
 protected:
@@ -216,9 +231,6 @@ public:
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USkeletalMeshComponent> Weapon;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collision, Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UBoxComponent> WeaponCollision;
 
 protected:
 	TArray<AActor*> HitEnemies;

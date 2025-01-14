@@ -6,6 +6,7 @@
 #include "Components/CheckBox.h"
 #include "Components/EditableTextBox.h"
 #include "Components/TextBlock.h"
+#include "Components/Image.h"
 #include "DungeonBoss.h"
 #include "Kismet/GameplayStatics.h"
 #include "SocketSubsystem.h"
@@ -38,8 +39,21 @@ void UDBMultiUIWidget::NativeConstruct()
 	JoinRandomRoomButton = Cast<UButton>(GetWidgetFromName(TEXT("JoinRandomRoomButton")));
 	ensure(JoinRandomRoomButton);
 
+	CheckIPButton = Cast<UButton>(GetWidgetFromName(TEXT("CheckIPButton")));
+	ensure(CheckIPButton);
+	if (CheckIPButton)
+	{
+		CheckIPButton->OnClicked.AddDynamic(this, &UDBMultiUIWidget::CoverImageOnOff);
+	}
+
+	CoverImage = Cast<UImage>(GetWidgetFromName(TEXT("CoverImage")));
+	ensure(CoverImage);
+
 	AddressText = Cast<UTextBlock>(GetWidgetFromName(TEXT("AddressText")));
 	ensure(AddressText);
+
+	CheckIPButtonText = Cast<UTextBlock>(GetWidgetFromName(TEXT("CheckIPButtonText")));
+	ensure(CheckIPButtonText);
 }
 
 void UDBMultiUIWidget::BindingButtons(ADBNetworkSetting* NetworkSetting)
@@ -68,5 +82,19 @@ void UDBMultiUIWidget::SetPlayerLocalAddress()
 	{
 		FString LocalIP = Addr->ToString(false);
 		AddressText->SetText(FText::FromString(LocalIP));
+	}
+}
+
+void UDBMultiUIWidget::CoverImageOnOff()
+{
+	if (CoverImage->GetVisibility() == ESlateVisibility::Visible)
+	{
+		CoverImage->SetVisibility(ESlateVisibility::Collapsed);
+		CheckIPButtonText->SetText(FText::FromString(TEXT("Hide IP")));
+	}
+	else if (CoverImage->GetVisibility() == ESlateVisibility::Collapsed)
+	{
+		CoverImage->SetVisibility(ESlateVisibility::Visible);
+		CheckIPButtonText->SetText(FText::FromString(TEXT("Check IP")));
 	}
 }

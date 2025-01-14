@@ -22,5 +22,4 @@ protected:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Mesh)
 	TObjectPtr<class UStaticMeshComponent> Body;
-
 };

@@ -40,10 +40,7 @@ UDBEquipItemData* UDBItemSingleton::AddEquipItem(FName ItemID)
 	UDBEquipItemData* EquipItem = NewObject<UDBEquipItemData>(this, UDBEquipItemData::StaticClass());
 	EquipItem->SetEquipStat(ItemID);
 	EquipItems.Emplace(EquipItem);
-	if (EquipItem)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Complete EquipItem Setting"));
-	}
+
 	return EquipItem;
 }
 

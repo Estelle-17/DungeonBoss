@@ -24,7 +24,10 @@ public:
 	void AddEquipItem(FName ItemID);
 	void AddCountableItem(FName ItemID, int32 ItemCount);
 
+	UDBCharacterStatComponent* CharacterStat;
+
 protected:
+
 //TileView Section
 	UPROPERTY()
 	TObjectPtr<class UTileView> WeaponItemBlocks;
@@ -73,4 +76,9 @@ protected:
 	void CountableItemButtonCallback();
 
 	void SetAllInventoryCollapsed();
+
+	UFUNCTION(BlueprintCallable)
+	void InventoryItemClicked(UObject* Item);
+
+	FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 };

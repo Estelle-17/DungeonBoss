@@ -41,6 +41,9 @@ public:
 protected:
 	void SetPlayerLocalAddress();
 
+	UFUNCTION(BlueprintCallable)
+	void CoverImageOnOff();
+
 	UPROPERTY()
 	TObjectPtr<class UButton> CreateRoomButton;
 
@@ -54,7 +57,16 @@ protected:
 	TObjectPtr<class UButton> JoinRandomRoomButton;
 
 	UPROPERTY()
+	TObjectPtr<class UButton> CheckIPButton;
+
+	UPROPERTY()
+	TObjectPtr<class UImage> CoverImage;
+	
+	UPROPERTY()
 	TObjectPtr<class UTextBlock> AddressText;
+
+	UPROPERTY()
+	TObjectPtr<class UTextBlock> CheckIPButtonText;
 
 	FOnJoinGameServerDelegate OnJoinGameServerDelegate;
 };

@@ -34,9 +34,16 @@ ADBPlayerController::ADBPlayerController()
 		InventoryAction = InventoryRef.Object;
 	}
 
+	static ConstructorHelpers::FObjectFinder<UInputAction> InteractionRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Interaction.IA_Player_Interaction'");
+	if (InteractionRef.Object)
+	{
+		InteractionAction = InteractionRef.Object;
+	}
+
 	NetworkSetting = CreateDefaultSubobject<ADBNetworkSetting>(TEXT("NetworkSetting"));
 
 	bShowMouseCursor = false;
+	bIsCanMultiUIWidgetOn = false;
 }
 
 //네트워크와 무관하게 액터를 초기화할 때 사용
@@ -99,7 +106,7 @@ void ADBPlayerController::BeginPlay()
 		{
 			DBMultiUIWidget->AddToViewport();
 			DBMultiUIWidget->BindingButtons(NetworkSetting);
-			//DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
+			DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
 
@@ -122,12 +129,24 @@ void ADBPlayerController::SetupInputComponent()
 	UEnhancedInputComponent* enhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent);
 
 	enhancedInputComponent->BindAction(InventoryAction, ETriggerEvent::Triggered, this, &ADBPlayerController::PlayerInventoryAction);
+	enhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &ADBPlayerController::PlayerInteractionAction);
+}
+
+void ADBPlayerController::SetMultiUIWidgetDisable()
+{
+	bIsCanMultiUIWidgetOn = false;
+	
+	//범위를 넘어서면 자동으로 UI닫기
+	if (DBMultiUIWidget)
+	{
+		DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
+		bShowMouseCursor = false;
+	}
 }
 
 void ADBPlayerController::PlayerInventoryAction(const FInputActionValue& Value)
 {
-	//DBInventoryWidget->AddEquipItem(TEXT("HEAD_001"));
-
+	//MultiUI 위젯 상호작용
 	if (DBInventoryWidget->IsVisible())
 	{
 		DBInventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
@@ -137,5 +156,20 @@ void ADBPlayerController::PlayerInventoryAction(const FInputActionValue& Value)
 	{
 		DBInventoryWidget->SetVisibility(ESlateVisibility::Visible);
 		bShowMouseCursor = true;
+	}
+}
+
+void ADBPlayerController::PlayerInteractionAction(const FInputActionValue& Value)
+{
+	if (bIsCanMultiUIWidgetOn)
+	{
+		DBMultiUIWidget->SetVisibility(ESlateVisibility::Visible);
+		bShowMouseCursor = true;
+		//DBMultiUIWidget->SetFocus();
+	}
+	else
+	{
+		DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
+		bShowMouseCursor = false;
 	}
 }

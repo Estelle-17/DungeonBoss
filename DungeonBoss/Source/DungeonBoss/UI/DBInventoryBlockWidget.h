@@ -48,4 +48,11 @@ protected:
 
 	UPROPERTY()
 	class UImage* ItemImage;
+
+//EquipCheck Setting
+	UPROPERTY()
+	TObjectPtr<class UCanvasPanel> EquipCheck;
+
+//Input Setting
+	FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 };

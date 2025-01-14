@@ -19,8 +19,9 @@
 // Sets default values
 APlayerCharacter::APlayerCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = 0.033;
 
 	//EnhancedInputAction
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> InputMappingContextRef = TEXT("/Script/EnhancedInput.InputMappingContext'/Game/Input/IMC_Player.IMC_Player'");
@@ -55,7 +56,10 @@ APlayerCharacter::APlayerCharacter()
 	}
 
 	//Collision Section
-	WeaponCollision->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OnOverlapBegin);
+	if (IsLocallyControlled())
+	{
+		WeaponCollision->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OnOverlapBegin);
+	}
 }
 
 // Called when the game starts or when spawned
@@ -112,14 +116,15 @@ void APlayerCharacter::Tick(float DeltaTime)
 
 	if (bCheckMotionWarping)
 	{
-		if (!HasAuthority())
+		if (HasAuthority())
 		{
 			SetMotionWarpingRotation(GetCharacterMovement()->GetLastInputVector());
+			UE_LOG(LogTemp, Log, TEXT("Check MotionWarping Vector : %s"), *GetCharacterMovement()->GetLastInputVector().ToString());
 		}
-
-		if (IsLocallyControlled())
+		else if (IsLocallyControlled())
 		{
 			ServerRPCUpdateTargetVector(GetCharacterMovement()->GetLastInputVector());
+			UE_LOG(LogTemp, Log, TEXT("Check MotionWarping Vector : %s"), *GetCharacterMovement()->GetLastInputVector().ToString());
 		}
 
 		bCheckMotionWarping = false;

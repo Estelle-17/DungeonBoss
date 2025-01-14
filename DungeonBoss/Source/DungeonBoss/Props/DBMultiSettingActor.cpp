@@ -2,6 +2,8 @@
 
 #include "Props/DBMultiSettingActor.h"
 #include "Net/UnrealNetwork.h"
+#include "Components/SphereComponent.h"
+#include "Player/DBPlayerController.h"
 #include "DungeonBoss.h"
 
 // Sets default values
@@ -10,6 +12,7 @@ ADBMultiSettingActor::ADBMultiSettingActor()
 	Body = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Body"));
 
 	RootComponent = Body;
+	Tags.Add(FName("MultiplayerNPC"));
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> BodyMeshRef(TEXT("/Script/Engine.StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
 	if (BodyMeshRef.Object)
@@ -26,4 +29,3 @@ void ADBMultiSettingActor::BeginPlay()
 	Super::BeginPlay();
 	
 }
-

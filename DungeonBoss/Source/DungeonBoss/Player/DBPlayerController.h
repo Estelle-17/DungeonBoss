@@ -29,6 +29,10 @@ protected:
 public:
 	virtual void SetupInputComponent() override;
 
+public:
+	FORCEINLINE void SetMultiUIWidgetEnable() { bIsCanMultiUIWidgetOn = true; }
+	void SetMultiUIWidgetDisable();
+
 //HUD Section
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
@@ -49,11 +53,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
 	TObjectPtr<class UDBMultiUIWidget> DBMultiUIWidget;
 
+	bool bIsCanMultiUIWidgetOn;
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InventoryAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> InteractionAction;
+
 	void PlayerInventoryAction(const FInputActionValue& Value);
+	void PlayerInteractionAction(const FInputActionValue& Value);
 
 //Network Section
 protected:
