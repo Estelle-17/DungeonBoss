@@ -25,7 +25,7 @@ ADBEnemyBase::ADBEnemyBase()
 
 	Body->SetGenerateOverlapEvents(true);
 	Body->SetRelativeScale3D(FVector3d(2.0f, 2.0f, 2.0f));
-	Body->ComponentTags.Add(FName("Enemy"));
+	Tags.Add(FName("Enemy"));
 
 	//Stat Section
 	Stat = CreateDefaultSubobject<UDBEnemyStatComponent>(TEXT("Stat"));

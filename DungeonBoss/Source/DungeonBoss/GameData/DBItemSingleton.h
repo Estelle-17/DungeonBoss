@@ -6,7 +6,7 @@
 #include "UObject/NoExportTypes.h"
 #include "DBItemStat.h"
 #include "DBCharacterStat.h"
-#include "Item/Equip/DBEquipItemData.h"
+#include "Item/DBItemObject.h"
 #include "Item/DBCountableItemData.h"
 #include "DBItemSingleton.generated.h"
 
@@ -25,24 +25,27 @@ public:
 	static UDBItemSingleton& Get();
 
 public:
-	FORCEINLINE FDBItemStat* GetEquipItemStat(FName ItemID) { return EquipItemDataTable->FindRow<FDBItemStat>(ItemID, TEXT("")); }
-	FORCEINLINE const TArray<UDBEquipItemData*> GetEquipItems(FName ItemID) { return EquipItems; }
+	void AddEquipItem(FName ItemID, UDBItemObject* ItemObject);
+	void RemoveEquipItem(UDBItemObject* ItemObject);
+	void AddCountableItem(FName ItemID, UDBItemObject* ItemObject);
 
-	FORCEINLINE FDBMaterialItemStat* GetCountableItemStat(FName ItemID) { return CountableItemDataTable->FindRow<FDBMaterialItemStat>(ItemID, TEXT("")); }
-	//FORCEINLINE const UDBCountableItemData* GetCountableItem(FName ItemID) { return CountableItems.Find(ItemID)->CountableItem; }
+//EquipItemData
+	FORCEINLINE FDBItemStat* GetLoadEquipItemData(FName ItemID) { return EquipItemDataTable->FindRow<FDBItemStat>(ItemID, TEXT("")); }
+	FORCEINLINE const TArray<UDBItemObject*> GetEquipItemObjects() { return EquipItems; }
+//CountableItemData
+	FORCEINLINE FDBMaterialItemStat* GetLoadCountableItemData(FName ItemID) { return CountableItemDataTable->FindRow<FDBMaterialItemStat>(ItemID, TEXT("")); }
+	FORCEINLINE UDBItemObject* GetCountableItemObject(FName ItemID) { return CountableItems[ItemID]; }
+	FORCEINLINE bool IsContainCountableItem(FName ItemID) { return CountableItems.Contains(ItemID); }
 
-	UDBEquipItemData* AddEquipItem(FName ItemID);
-	void RemoveEquipItem(UDBEquipItemData* EquipItemData);
-	UDBCountableItemData* AddCountableItem(FName ItemID, int32 ItemCount);
 
 private:
 	class UDataTable* EquipItemDataTable;
 
 	UPROPERTY(EditAnywhere)
-	TArray<UDBEquipItemData*> EquipItems;
+	TArray<UDBItemObject*> EquipItems;
 
 	class UDataTable* CountableItemDataTable;
 
 	UPROPERTY(EditAnywhere)
-	TMap<FName, UDBCountableItemData*> CountableItems;
+	TMap<FName, UDBItemObject*> CountableItems;
 };

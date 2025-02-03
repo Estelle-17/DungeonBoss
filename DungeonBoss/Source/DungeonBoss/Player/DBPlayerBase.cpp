@@ -651,11 +651,13 @@ void ADBPlayerBase::OnSearchOverlapEnd(UPrimitiveComponent* OverlappedComponent,
 
 void ADBPlayerBase::CheckHitEnable()
 {
+	//UE_LOG(LogTemp, Log, TEXT("CheckHitEnable!"));
 	WeaponCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
 void ADBPlayerBase::CheckHitDisable()
 {
+	//UE_LOG(LogTemp, Log, TEXT("CheckHitDisable!"));
 	WeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	HitEnemies.Empty();
 }

@@ -9,6 +9,7 @@
 #include "Interface/DBCharacterHUDInterface.h"
 #include "Interface/DBMotionWarpingInterface.h"
 #include "GameData/DBCharacterStat.h"
+#include "Stat/DBCharacterStatComponent.h"
 #include "DBPlayerBase.generated.h"
 
 UCLASS()
@@ -52,6 +53,8 @@ protected:
 	uint8 bCheckMotionWarping = 0;
 
 //Stat Section
+public:
+	FORCEINLINE UDBCharacterStatComponent* GetCharacterStatComponent() { return Stat; }
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDBCharacterStatComponent> Stat;

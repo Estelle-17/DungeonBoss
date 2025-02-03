@@ -16,30 +16,22 @@ void UDBInventoryBlockWidget::NativeConstruct()
 	ItemCount = Cast<UTextBlock>(GetWidgetFromName(TEXT("Count")));
 	ensure(ItemCount);
 
-	ItemImage = Cast<UImage>(GetWidgetFromName(TEXT("ItemImage")));
+	ItemImage = Cast<UImage>(GetWidgetFromName(TEXT("InventoryImage")));
 	ensure(ItemImage);
 
-	//EquipCheck Setting
-	EquipCheck = Cast<UCanvasPanel>(GetWidgetFromName(TEXT("EquipCheckImage")));
-	ensure(EquipCheck);
-	EquipCheck->SetVisibility(ESlateVisibility::Collapsed);
+	FString ItemSlotTexturePtr = "/Script/Engine.Texture2D'/Game/Texture/Items/Equip/InventoryBlockTexture.InventoryBlockTexture'";
+	ItemSlotTexture = LoadObject<UTexture2D>(nullptr, *ItemSlotTexturePtr);
 }
 
-void UDBInventoryBlockWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
+void UDBInventoryBlockWidget::SetItemSetting(UObject* ItemObject)
 {
-	IUserObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
-	if (!CountableItemData && !EquipItemData)
+	ItemObjectData = Cast<UDBItemObject>(ItemObject);
+	if (!ItemObjectData)
 	{
-		CountableItemData = Cast<UDBCountableItemData>(ListItemObject);
-		if (CountableItemData)
-		{
-			CountableItemData->OnSetItemCount.AddUObject(this, &UDBInventoryBlockWidget::SetCountableItemSetting);
-		}
-
-		EquipItemData = Cast<UDBEquipItemData>(ListItemObject);
+		return;
 	}
 
-	if (CountableItemData)
+	if (ItemObjectData->bIsCountableItem)
 	{
 		SetCountableItemSetting();
 	}
@@ -49,51 +41,13 @@ void UDBInventoryBlockWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 	}
 }
 
-void UDBInventoryBlockWidget::NativeOnItemSelectionChanged(bool bIsSelected)
-{
-	IUserObjectListEntry::NativeOnItemSelectionChanged(bIsSelected);
-
-	if (bIsSelected)
-	{
-		UE_LOG(LogTemp, Log, TEXT("%s is Select true"), *this->GetFName().ToString());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("%s is Select false"), *this->GetFName().ToString());
-	}
-	
-}
-
-FReply UDBInventoryBlockWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
-{
-	FEventReply Reply;
-	Reply.NativeReply = Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
-
-	//우클릭 입력이 들어왔을 경우
-	if (InMouseEvent.IsMouseButtonDown(EKeys::RightMouseButton))
-	{
-		UE_LOG(LogTemp, Log, TEXT("Is Clicked RightMouseButton"));
-		//장비 아이템만 장착 가능
-		if (EquipItemData)
-		{
-			EquipCheck->SetVisibility(ESlateVisibility::Visible);
-			//인벤토리 스크립트에 아이템 정보 보낸 후 장비 창에 이미지 등록
-			//이후 아이템에 맞춰 스탯 설정
-		}
-	}
-
-	return Reply.NativeReply;
-}
-
 void UDBInventoryBlockWidget::SetEquipItemSetting()
 {
-	ensure(EquipItemData);
-
 	ItemCount->SetText(FText::FromString(TEXT("")));
-	if (ItemImage)
+	if (ItemImage && ItemObjectData)
 	{
 		FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
-		ItemImage->SetBrushFromTexture(EquipItemData->GetItemTexture());
+		ItemImage->SetBrushFromTexture(ItemObjectData->GetEquipItemData()->GetItemTexture());
 		ItemImage->SetDesiredSizeOverride(CurrentImageSize);
 	}
 }
@@ -102,12 +56,37 @@ void UDBInventoryBlockWidget::SetCountableItemSetting()
 {
 	if (ItemCount)
 	{
-		ItemCount->SetText(FText::FromString(FString::Printf(TEXT("%d"), CountableItemData->GetItenCount())));
+		ItemCount->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemObjectData->GetItemCount())));
 	}
 	if (ItemImage)
 	{
 		FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
-		ItemImage->SetBrushFromTexture(CountableItemData->GetItemTexture());
+		ItemImage->SetBrushFromTexture(ItemObjectData->GetCountableItemData()->GetItemTexture());
 		ItemImage->SetDesiredSizeOverride(CurrentImageSize);
 	}
+}
+
+FReply UDBInventoryBlockWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	FEventReply Reply;
+	Reply.NativeReply = Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+
+	if (!ItemObjectData)
+	{
+		return Reply.NativeReply;
+	}
+
+	//우클릭 입력이 들어왔을 경우
+	if (InMouseEvent.IsMouseButtonDown(EKeys::RightMouseButton))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Is Clicked RightMouseButton"));
+		//장비 아이템만 장착 가능
+		if (!ItemObjectData->bIsCountableItem)
+		{
+			//ItemData에 아이템 정보를 보내라고 알려줌
+			ItemObjectData->SetPlayerEquipSetting();
+		}
+	}
+
+	return Reply.NativeReply;
 }

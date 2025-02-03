@@ -3,9 +3,13 @@
 #include "UI/DBInventoryWidget.h"
 #include "Components/TileView.h"
 #include "Components/Button.h"
+#include "Components/Image.h"
 #include "UI/DBInventoryBlockWidget.h"
 #include "Interface/DBCharacterHUDInterface.h"
 #include "GameData/DBItemSingleton.h"
+#include "Item/DBItemObject.h"
+#include "Player/DBPlayerBase.h"
+#include "DBInventoryBlockWidget.h"
 #include "DungeonBoss.h"
 
 UDBInventoryWidget::UDBInventoryWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -16,47 +20,31 @@ void UDBInventoryWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-//TileView Setting
-	WeaponItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("WeaponItemBlocks")));
-	ensure(WeaponItemBlocks);
-	WeaponItemBlocks->OnItemClicked().AddUObject(this, &UDBInventoryWidget::InventoryItemClicked);
+//ItemSlot Setting
+	//각 인벤토리의 칸을 TArray에 저장
+	for (int index = 0; index < 80; index++)
+	{
+		FName InventoryBlockName = *FString::Printf(TEXT("InventoryBlock_%d"), index);
+		UDBInventoryBlockWidget* InventoryBlockWidget = Cast<UDBInventoryBlockWidget>(GetWidgetFromName(InventoryBlockName));
+		ensure(InventoryBlockWidget);
+		ItemSlots.Add(InventoryBlockWidget);
+	}
+	CanInputItemSlotIndex = 0;
+	
+	//UE_LOG(LogTemp, Log, TEXT("ItemSlot Count : %d"), ItemSlots.Num());
 
-	HeadItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("HeadItemBlocks")));
-	ensure(HeadItemBlocks);
-	HeadItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+//CharacterEquip Setting
+	HeadImage = Cast<UImage>(GetWidgetFromName(TEXT("EquipHeadImage")));
+	ensure(HeadImage);
 
-	BodyItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("BodyItemBlocks")));
-	ensure(BodyItemBlocks);
-	BodyItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+	BodyImage = Cast<UImage>(GetWidgetFromName(TEXT("EquipBodyImage")));
+	ensure(BodyImage);
 
-	ShoesItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("ShoesItemBlocks")));
-	ensure(ShoesItemBlocks);
-	ShoesItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+	ShoesImage = Cast<UImage>(GetWidgetFromName(TEXT("EquipShoesImage")));
+	ensure(ShoesImage);
 
-	CountableItemBlocks = Cast<UTileView>(GetWidgetFromName(TEXT("CountableItemBlocks")));
-	ensure(CountableItemBlocks);
-	CountableItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
-
-//Button Setting
-	WeaponItemButton = Cast<UButton>(GetWidgetFromName(TEXT("WeaponItemButton")));
-	ensure(WeaponItemBlocks);
-	WeaponItemButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::WeaponItemButtonCallback);
-
-	HeadItemButton = Cast<UButton>(GetWidgetFromName(TEXT("HeadItemButton")));
-	ensure(HeadItemButton);
-	HeadItemButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::HeadItemButtonCallback);
-
-	BodyItemButton = Cast<UButton>(GetWidgetFromName(TEXT("BodyItemButton")));
-	ensure(BodyItemButton);
-	BodyItemButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::BodyItemButtonCallback);
-
-	ShoesItemButton = Cast<UButton>(GetWidgetFromName(TEXT("ShoesItemButton")));
-	ensure(ShoesItemButton);
-	ShoesItemButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::ShoesItemButtonCallback);
-
-	CountableItemButton = Cast<UButton>(GetWidgetFromName(TEXT("CountableItemButton")));
-	ensure(CountableItemButton);
-	CountableItemButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::CountableItemButtonCallback);
+	WeaponImage = Cast<UImage>(GetWidgetFromName(TEXT("EquipWeaponImage")));
+	ensure(WeaponImage);
 
 //Player Setting
 	IDBCharacterHUDInterface* HUDPawn = Cast<IDBCharacterHUDInterface>(GetOwningPlayerPawn());
@@ -64,6 +52,15 @@ void UDBInventoryWidget::NativeConstruct()
 	{
 		HUDPawn->SetupInventoryWidget(this);
 	}
+
+	ADBPlayerBase* PlayerPawn = Cast<ADBPlayerBase>(GetOwningPlayerPawn());
+	if (PlayerPawn)
+	{
+		CharacterStat = PlayerPawn->GetCharacterStatComponent();
+	}
+
+	AddEquipItem(TEXT("WEAPON_001"));
+	AddEquipItem(TEXT("WEAPON_001"));
 	AddEquipItem(TEXT("HEAD_001"));
 	AddEquipItem(TEXT("HEAD_001"));
 	AddEquipItem(TEXT("BODY_001"));
@@ -77,109 +74,115 @@ void UDBInventoryWidget::NativeConstruct()
 
 void UDBInventoryWidget::AddEquipItem(FName ItemID)
 {
-	UDBEquipItemData* EquipItemData = UDBItemSingleton::Get().AddEquipItem(ItemID);
+	//UDBEquipItemData* EquipItemData = UDBItemSingleton::Get().AddEquipItem(ItemID);
+	UDBItemObject* ItemObject = NewObject<UDBItemObject>(this, UDBItemObject::StaticClass());
+	ItemObject->MakeEquipItemData(ItemID);
+
+	const UDBEquipItemData* EquipItemData = ItemObject->GetEquipItemData();
+
+	//장비 아이템을 장착할 때 실행할 함수를 Delegate에 추가
+	ItemObject->OnPlayerSetEquipItem.AddUObject(this, &UDBInventoryWidget::SettingEquipItemForPlayer);
 
 	if (EquipItemData)
 	{	
-		switch (EquipItemData->GetEquipItemStat().ItemType)
-		{
-			case 0:
-				WeaponItemBlocks->AddItem(EquipItemData);
-				break;
-			case 1:
-				HeadItemBlocks->AddItem(EquipItemData);
-				break;
-			case 2:
-				BodyItemBlocks->AddItem(EquipItemData);
-				break;
-			case 3:
-				ShoesItemBlocks->AddItem(EquipItemData);
-				break;
-		}
+		//아이템을 인벤토리에 넣어줌
+		UE_LOG(LogTemp, Log, TEXT("%s"), *ItemSlots[CanInputItemSlotIndex]->GetName());
+		ItemSlots[CanInputItemSlotIndex]->SetItemSetting(ItemObject);
+		CanInputItemSlotIndex++;
 	}
 }
 
 void UDBInventoryWidget::AddCountableItem(FName ItemID, int32 ItemCount)
 {
-	UDBCountableItemData* CountableItemData = UDBItemSingleton::Get().AddCountableItem(ItemID, ItemCount);
-
-	UE_LOG(LogTemp, Log, TEXT("CountableItemData : %d"), CountableItemData->GetUniqueID());
-	for (UObject* obj : CountableItemBlocks->GetListItems())
+	//UDBCountableItemData* CountableItemData = UDBItemSingleton::Get().AddCountableItem(ItemID, ItemCount);
+	//이미 인벤토리에 아이템이 존재하는지 확인
+	if (UDBItemSingleton::Get().IsContainCountableItem(ItemID))
 	{
-		UE_LOG(LogTemp, Log, TEXT("CountableItemBlocks : %d"), obj->GetUniqueID());
-	}
-
-	//아이템이 인벤토리 블록으로 생성되어 있을 경우
-	if (CountableItemBlocks->GetListItems().Contains(CountableItemData))
-	{
-		CountableItemData->SetItemCount();
-		UE_LOG(LogTemp, Log, TEXT("Contain Item!"));
+		UDBItemObject* ItemObject = UDBItemSingleton::Get().GetCountableItemObject(ItemID);
+		//아이템이 존재할 시 불러올 방법 제작해야함
+		ItemObject->SetItemCount(ItemCount);
 	}
 	else
 	{
-		CountableItemBlocks->AddItem(CountableItemData);
+		UDBItemObject* ItemObject = NewObject<UDBItemObject>(this, UDBItemObject::StaticClass());
+		ItemObject->MakeCountableItemData(ItemID, ItemCount);
+
+		//겹칠 수 있는 새로운 아이템을 인벤토리에 넣어줌
+
 	}
 }
 
-void UDBInventoryWidget::WeaponItemButtonCallback()
+void UDBInventoryWidget::SettingEquipItemForPlayer(UDBItemObject* ItemObject)
 {
-	SetAllInventoryCollapsed();
-	WeaponItemBlocks->SetVisibility(ESlateVisibility::Visible);
-}
+	UDBEquipItemData* EquipItemData = ItemObject->GetEquipItemData();
 
-void UDBInventoryWidget::HeadItemButtonCallback()
-{
-	SetAllInventoryCollapsed();
-	HeadItemBlocks->SetVisibility(ESlateVisibility::Visible);
-}
+	//이전에 장착된 아이템이 있을 경우 제거
+	switch (EquipItemData->GetEquipItemStat().ItemType)
+	{
+	case 0:	//Weapon
+		//전에 장착하고 있는 아이템을 인벤토리로 이동
+		if (CharacterEquipStats.WeaponEquipItem)
+		{
+			
+		}
+		//새롭게 장착하게 된 아이템 주소 저장
+		CharacterEquipStats.WeaponEquipItem = ItemObject;
 
-void UDBInventoryWidget::BodyItemButtonCallback()
-{
-	SetAllInventoryCollapsed();
-	BodyItemBlocks->SetVisibility(ESlateVisibility::Visible);
-}
+		//장착한 아이템의 이미지를 캐릭터 아이템 장착UI에 넣어주기
+		WeaponImage->SetBrushFromTexture(EquipItemData->GetItemTexture());
+		WeaponImage->SetDesiredSizeOverride(WeaponImage->GetBrush().ImageSize);
 
-void UDBInventoryWidget::ShoesItemButtonCallback()
-{
-	SetAllInventoryCollapsed();
-	ShoesItemBlocks->SetVisibility(ESlateVisibility::Visible);
-}
+		break;
+	case 1:	//Head
+		//전에 장착하고 있는 아이템을 인벤토리로 이동
+		if (CharacterEquipStats.HeadEquipItem)
+		{
+			
+		}
+		//새롭게 장착하게 된 아이템 주소 저장
+		CharacterEquipStats.HeadEquipItem = ItemObject;
 
-void UDBInventoryWidget::CountableItemButtonCallback()
-{
-	SetAllInventoryCollapsed();
-	CountableItemBlocks->SetVisibility(ESlateVisibility::Visible);
-}
+		//장착한 아이템의 이미지를 캐릭터 아이템 장착UI에 넣어주기
+		HeadImage->SetBrushFromTexture(EquipItemData->GetItemTexture());
+		HeadImage->SetDesiredSizeOverride(HeadImage->GetBrush().ImageSize);
+		break;
+	case 2:	//Body
+		//전에 장착하고 있는 아이템을 인벤토리로 이동
+		if (CharacterEquipStats.BodyEquipItem)
+		{
+			
+		}
+		//새롭게 장착하게 된 아이템 주소 저장
+		CharacterEquipStats.BodyEquipItem = ItemObject;
 
-void UDBInventoryWidget::SetAllInventoryCollapsed()
-{
-	WeaponItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
-	HeadItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
-	BodyItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
-	ShoesItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
-	CountableItemBlocks->SetVisibility(ESlateVisibility::Collapsed);
+		//장착한 아이템의 이미지를 캐릭터 아이템 장착UI에 넣어주기
+		BodyImage->SetBrushFromTexture(EquipItemData->GetItemTexture());
+		BodyImage->SetDesiredSizeOverride(BodyImage->GetBrush().ImageSize);
+		break;
+	case 3:	//Shoes
+		//전에 장착하고 있는 아이템을 인벤토리로 이동
+		if (CharacterEquipStats.ShoesEquipItem)
+		{
+			
+		}
+		//새롭게 장착하게 된 아이템 주소 저장
+		CharacterEquipStats.ShoesEquipItem = ItemObject;
+
+		//장착한 아이템의 이미지를 캐릭터 아이템 장착UI에 넣어주기
+		ShoesImage->SetBrushFromTexture(EquipItemData->GetItemTexture());
+		ShoesImage->SetDesiredSizeOverride(ShoesImage->GetBrush().ImageSize);
+		break;
+	}
+	UE_LOG(LogTemp, Log, TEXT("EquipItemSetting On"))
+
+	//플레이어한테 아이템 스탯 적용
+	if (CharacterStat)
+	{
+		CharacterStat->SetModifierStat(EquipItemData->GetEquipCharacterStat(), EquipItemData->GetEquipItemStat().ItemType);
+	}
 }
 
 void UDBInventoryWidget::InventoryItemClicked(UObject* Item)
 {
 	UE_LOG(LogTemp, Log, TEXT("Is Clicked! : %s"), *Item->GetFName().ToString())
-}
-
-FReply UDBInventoryWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
-{
-	FEventReply Reply;
-	Reply.NativeReply = Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
-
-	//좌클릭 입력이 들어왔을 경우
-	if (InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
-	{
-		UE_LOG(LogTemp, Log, TEXT("Is Clicked LeftMouseButton"));
-	}
-	//우클릭 입력이 들어왔을 경우
-	/*if (InMouseEvent.IsMouseButtonDown(EKeys::RightMouseButton))
-	{
-		UE_LOG(LogTemp, Log, TEXT("Is Clicked RightMouseButton"));
-	}*/
-
-	return Reply.NativeReply;
 }

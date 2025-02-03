@@ -29,7 +29,7 @@ void UDBCharacterStatComponent::InitializeComponent()
 
 	SetBaseStat(CharacterStat);
 	SetHp(BaseStat.MaxHp);
-	CharacterEquips.SetEquipTotalStat();
+	CharacterEquipStats.SetEquipTotalStat();
 }
 
 float UDBCharacterStatComponent::ApplyDamage(float InDamage)
@@ -46,6 +46,26 @@ float UDBCharacterStatComponent::ApplyDamage(float InDamage)
 	}
 
 	return ActualDamage;
+}
+
+void UDBCharacterStatComponent::SetModifierStat(FDBCharacterStat NewEquipStat, int32 ItemType)
+{
+	switch (ItemType)
+	{
+		case 0:	//Weapon
+			CharacterEquipStats.WeaponStat = NewEquipStat;
+			break;
+		case 1:	//Head
+			CharacterEquipStats.HeadStat = NewEquipStat;
+			break;
+		case 2:	//Body
+			CharacterEquipStats.BodyStat = NewEquipStat;
+			break;
+		case 3:	//Shoes
+			CharacterEquipStats.ShoesStat = NewEquipStat;
+			break;
+	}
+	CharacterEquipStats.SetEquipTotalStat();
 }
 
 // Called when the game starts

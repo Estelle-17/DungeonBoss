@@ -35,36 +35,17 @@ UDBItemSingleton& UDBItemSingleton::Get()
 	return *NewObject<UDBItemSingleton>();
 }
 
-UDBEquipItemData* UDBItemSingleton::AddEquipItem(FName ItemID)
+void UDBItemSingleton::AddEquipItem(FName ItemID, UDBItemObject* ItemObject)
 {
-	UDBEquipItemData* EquipItem = NewObject<UDBEquipItemData>(this, UDBEquipItemData::StaticClass());
-	EquipItem->SetEquipStat(ItemID);
-	EquipItems.Emplace(EquipItem);
-
-	return EquipItem;
+	EquipItems.Emplace(ItemObject);
 }
 
-void UDBItemSingleton::RemoveEquipItem(UDBEquipItemData* EquipItemData)
+void UDBItemSingleton::RemoveEquipItem(UDBItemObject* ItemObject)
 {
-	EquipItems.Remove(EquipItemData);
+	EquipItems.Remove(ItemObject);
 }
 
-UDBCountableItemData* UDBItemSingleton::AddCountableItem(FName ItemID, int32 ItemCount)
+void UDBItemSingleton::AddCountableItem(FName ItemID, UDBItemObject* ItemObject)
 {
-	//아이템의 ID와 갯수만 저장하며 미리 불러온 데이터로 값을 가져옴
-	if (CountableItems.Contains(ItemID))
-	{
-		UDBCountableItemData* CountableItem = CountableItems[ItemID];
-		CountableItem->SetItemCount(ItemCount);
-
-		return CountableItem;
-	}
-	else
-	{
-		UDBCountableItemData* CountableItem = NewObject<UDBCountableItemData>(this, UDBCountableItemData::StaticClass());
-		CountableItem->SetCountableItemStat(ItemID, ItemCount);
-		CountableItems.Emplace(ItemID, CountableItem);
-
-		return CountableItem;
-	}
+	CountableItems.Emplace(ItemID, ItemObject);
 }

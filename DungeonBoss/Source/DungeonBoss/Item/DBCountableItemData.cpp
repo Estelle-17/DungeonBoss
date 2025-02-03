@@ -8,7 +8,7 @@
 
 void UDBCountableItemData::SetCountableItemStat(FName ItemID, int32 Count)
 {
-	const FDBMaterialItemStat* DataTable = UDBItemSingleton::Get().GetCountableItemStat(ItemID);
+	const FDBMaterialItemStat* DataTable = UDBItemSingleton::Get().GetLoadCountableItemData(ItemID);
 
 	FDBMaterialItemStat Item;
 
@@ -18,8 +18,6 @@ void UDBCountableItemData::SetCountableItemStat(FName ItemID, int32 Count)
 	Item.TexturePath = DataTable->TexturePath;
 
 	ItemTexture = LoadObject<UTexture2D>(nullptr, *Item.TexturePath);
-
-	ItemCount = Count;
 
 	switch (Item.ItemType)
 	{

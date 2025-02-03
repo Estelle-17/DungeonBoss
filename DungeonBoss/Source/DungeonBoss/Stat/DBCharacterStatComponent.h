@@ -12,7 +12,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnHpChangedDelegate, float /*CurrentHp*/);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnStatChangedDelegate, const FDBCharacterStat& /*BaseStat*/, const FDBCharacterStat& /*ModifierStat*/);
 
 USTRUCT(Atomic, BlueprintType)
-struct FCharacterEquip
+struct FCharacterEquipStats
 {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -59,11 +59,12 @@ public:
 	FORCEINLINE void SetBaseStat(const FDBCharacterStat& InBaseStat) { BaseStat = InBaseStat; OnStatChanged.Broadcast(GetBaseStat(), GetModifierStat()); }
 
 	FORCEINLINE const FDBCharacterStat& GetBaseStat() const { return BaseStat; }
-	FORCEINLINE const FDBCharacterStat& GetModifierStat() { return CharacterEquips.EquipTotalStat; }
-	FORCEINLINE const FDBCharacterStat GetTotalStat() { return BaseStat + CharacterEquips.EquipTotalStat; }
+	FORCEINLINE const FDBCharacterStat& GetModifierStat() { return CharacterEquipStats.EquipTotalStat; }
+	FORCEINLINE const FDBCharacterStat GetTotalStat() { return BaseStat + CharacterEquipStats.EquipTotalStat; }
 	FORCEINLINE float GetCurrentHp() const { return CurrentHp; }
 	FORCEINLINE void HealHp(float HealAmount) { CurrentHp = FMath::Clamp(CurrentHp + HealAmount, 0, GetTotalStat().MaxHp); OnHpChanged.Broadcast(CurrentHp); }
 	float ApplyDamage(float InDamage);
+	void SetModifierStat(FDBCharacterStat NewEquipStat, int32 ItemType);
 
 protected:
 	void SetHp(float NewHp);
@@ -74,7 +75,7 @@ protected:
 	UPROPERTY(Transient, VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	FDBCharacterStat BaseStat;
 
-	FCharacterEquip CharacterEquips;
+	FCharacterEquipStats CharacterEquipStats;
 
 protected:
 	virtual void BeginPlay() override;

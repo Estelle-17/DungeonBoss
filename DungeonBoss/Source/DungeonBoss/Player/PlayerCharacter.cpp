@@ -56,7 +56,7 @@ APlayerCharacter::APlayerCharacter()
 	}
 
 	//Collision Section
-	if (IsLocallyControlled())
+	if (HasAuthority() || IsLocallyControlled())
 	{
 		WeaponCollision->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OnOverlapBegin);
 	}
@@ -233,8 +233,8 @@ void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 		{
 			PlayComboAttack();
 		}
-		Inventory->UpdateEquipItem(TEXT("WEAPON_001"));
-		Inventory->UpdateCountableItem(TEXT("BOSS_01_01"), 1);
+		//Inventory->UpdateEquipItem(TEXT("WEAPON_001"));
+		//Inventory->UpdateCountableItem(TEXT("BOSS_01_01"), 1);
 		ServerRPCAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
 	}
 }
@@ -652,7 +652,8 @@ void APlayerCharacter::ServerRPCNotifyMiss_Implementation(FVector_NetQuantize Tr
 
 void APlayerCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (SweepResult.GetComponent()->ComponentTags.Contains(FName(TEXT("Enemy"))) && !HitEnemies.Contains(OtherActor) && IsLocallyControlled())
+	UE_LOG(LogTemp, Log, TEXT("AttackColliderCheck : %d"), OtherActor->Tags.Num());
+	if (OtherActor->Tags.Contains(FName(TEXT("Enemy"))) && !HitEnemies.Contains(OtherActor) && IsLocallyControlled())
 	{
 		DB_LOG(LogDBNetwork, Log, TEXT("Find Enemy!"));
 

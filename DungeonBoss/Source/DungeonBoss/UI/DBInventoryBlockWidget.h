@@ -7,41 +7,31 @@
 #include "Blueprint/IUserObjectListEntry.h"
 #include "Item/Equip/DBEquipItemData.h"
 #include "Item/DBCountableItemData.h"
+#include "Item/DBItemObject.h"
 #include "DBInventoryBlockWidget.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class DUNGEONBOSS_API UDBInventoryBlockWidget : public UUserWidget, public IUserObjectListEntry
+class DUNGEONBOSS_API UDBInventoryBlockWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
 public:
 	UDBInventoryBlockWidget(const FObjectInitializer& ObjectInitializer);
 
-	FORCEINLINE void SetEquipItemData(UDBEquipItemData* EquipItem) { EquipItemData = EquipItem; }
-	FORCEINLINE UDBEquipItemData* GetEquipItemData() { return EquipItemData; }
-		
-	FORCEINLINE void SetCountableItemData(UDBCountableItemData* CountableItem) { CountableItemData = CountableItem; }
-	FORCEINLINE UDBCountableItemData* GetCountableItemData() { return CountableItemData; }
-
 public:
+	void SetItemSetting(UObject* ItemObject);
 	void SetEquipItemSetting();
 	void SetCountableItemSetting();
 
 protected:
 	virtual void NativeConstruct() override;
 
-	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
-	virtual void NativeOnItemSelectionChanged(bool bIsSelected) override;
-
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Stat, Meta = (AllowPrivateAccess = "true"))
-	UDBEquipItemData* EquipItemData;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Stat, Meta = (AllowPrivateAccess = "true"))
-	UDBCountableItemData* CountableItemData;
+	UDBItemObject* ItemObjectData;
 
 	UPROPERTY()
 	class UTextBlock* ItemCount;
@@ -49,9 +39,8 @@ protected:
 	UPROPERTY()
 	class UImage* ItemImage;
 
-//EquipCheck Setting
-	UPROPERTY()
-	TObjectPtr<class UCanvasPanel> EquipCheck;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Texture)
+	UTexture2D* ItemSlotTexture;
 
 //Input Setting
 	FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;

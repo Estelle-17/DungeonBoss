@@ -8,7 +8,7 @@
 
 void UDBEquipItemData::SetEquipStat(FName ItemID)
 {
-	const FDBItemStat* DataTable = UDBItemSingleton::Get().GetEquipItemStat(ItemID);
+	const FDBItemStat* DataTable = UDBItemSingleton::Get().GetLoadEquipItemData(ItemID);
 
 	FDBItemStat Item;
 
@@ -54,4 +54,9 @@ void UDBEquipItemData::SetEquipCharacterStat()
 	CharacterStat.MovementSpeed = ItemStat.MovementSpeed;
 
 	SetCharacterStat(CharacterStat);
+}
+
+void UDBEquipItemData::SendEquipItem()
+{
+	//InventoryWidget->SettingEquipItemForPlayer(this);
 }
