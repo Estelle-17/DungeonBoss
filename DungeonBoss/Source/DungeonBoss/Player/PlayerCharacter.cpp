@@ -652,7 +652,6 @@ void APlayerCharacter::ServerRPCNotifyMiss_Implementation(FVector_NetQuantize Tr
 
 void APlayerCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	UE_LOG(LogTemp, Log, TEXT("AttackColliderCheck : %d"), OtherActor->Tags.Num());
 	if (OtherActor->Tags.Contains(FName(TEXT("Enemy"))) && !HitEnemies.Contains(OtherActor) && IsLocallyControlled())
 	{
 		DB_LOG(LogDBNetwork, Log, TEXT("Find Enemy!"));

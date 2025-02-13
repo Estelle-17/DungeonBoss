@@ -702,7 +702,7 @@ void ADBPlayerBase::AnimationOutDisable()
 void ADBPlayerBase::UpdateMotionWarpingTargetVector()
 {
 	bCheckMotionWarping = true;
-	UE_LOG(LogTemp, Log, TEXT("UpdateMotionWarpingTargetVector On"));
+	//UE_LOG(LogTemp, Log, TEXT("UpdateMotionWarpingTargetVector On"));
 }
 
 #pragma endregion

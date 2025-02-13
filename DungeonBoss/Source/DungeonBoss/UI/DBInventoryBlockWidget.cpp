@@ -4,6 +4,10 @@
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "Components/CanvasPanel.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Item/ItemDragDropOperation.h"
+#include "Player/DBPlayerController.h"
+#include "UI/DBItemDragVisualWidget.h"
 
 UDBInventoryBlockWidget::UDBInventoryBlockWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -19,8 +23,23 @@ void UDBInventoryBlockWidget::NativeConstruct()
 	ItemImage = Cast<UImage>(GetWidgetFromName(TEXT("InventoryImage")));
 	ensure(ItemImage);
 
-	FString ItemSlotTexturePtr = "/Script/Engine.Texture2D'/Game/Texture/Items/Equip/InventoryBlockTexture.InventoryBlockTexture'";
-	ItemSlotTexture = LoadObject<UTexture2D>(nullptr, *ItemSlotTexturePtr);
+	ItemEnterImage = Cast<UImage>(GetWidgetFromName(TEXT("InventoryEnterImage")));
+	ensure(ItemEnterImage);
+	ItemEnterImage->SetVisibility(ESlateVisibility::Collapsed);
+
+	TranslucnetImage = Cast<UImage>(GetWidgetFromName(TEXT("TranslucentImage")));
+	ensure(TranslucnetImage);
+	TranslucnetImage->SetVisibility(ESlateVisibility::Collapsed);
+
+	ItemSlotType = EItemSlotType::None;
+	bIsEquipSlot = false;
+
+	ADBPlayerController* PlayerController = Cast<ADBPlayerController>(GetWorld()->GetFirstPlayerController());
+	//PlayerContorller에서 ItemDragVisualWidget가져오기
+	if (PlayerController)
+	{
+		ItemDragVisualWidget = PlayerController->GetItemDragVisualWidget();
+	}
 }
 
 void UDBInventoryBlockWidget::SetItemSetting(UObject* ItemObject)
@@ -43,7 +62,10 @@ void UDBInventoryBlockWidget::SetItemSetting(UObject* ItemObject)
 
 void UDBInventoryBlockWidget::SetEquipItemSetting()
 {
-	ItemCount->SetText(FText::FromString(TEXT("")));
+	if (ItemCount)
+	{
+		ItemCount->SetText(FText::FromString(TEXT("")));
+	}
 	if (ItemImage && ItemObjectData)
 	{
 		FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
@@ -66,6 +88,31 @@ void UDBInventoryBlockWidget::SetCountableItemSetting()
 	}
 }
 
+void UDBInventoryBlockWidget::ResetInventorySlot()
+{
+	ItemObjectData = nullptr;
+
+	if (ItemCount)
+	{
+		ItemCount->SetText(FText::FromString(TEXT("")));
+	}
+	if (ItemImage)
+	{
+		FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
+		ItemImage->SetBrushFromTexture(ItemSlotTexture);
+		ItemImage->SetDesiredSizeOverride(CurrentImageSize);
+	}
+
+	ItemSlotType = EItemSlotType::None;
+}
+
+void UDBInventoryBlockWidget::SetTranslucnetImageDisable()
+{
+	TranslucnetImage->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+#pragma region Input Setting
+
 FReply UDBInventoryBlockWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
 	FEventReply Reply;
@@ -76,17 +123,117 @@ FReply UDBInventoryBlockWidget::NativeOnMouseButtonDown(const FGeometry& InGeome
 		return Reply.NativeReply;
 	}
 
+	//좌클릭 입력이 들어왔을 경우
+	if (InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Drag : LeftMouseButton"));
+		
+		if (ItemSlotType == EItemSlotType::Item)
+		{
+			Reply = UWidgetBlueprintLibrary::DetectDragIfPressed(InMouseEvent, this, EKeys::LeftMouseButton);
+		}
+	}
+
 	//우클릭 입력이 들어왔을 경우
 	if (InMouseEvent.IsMouseButtonDown(EKeys::RightMouseButton))
 	{
 		UE_LOG(LogTemp, Log, TEXT("Is Clicked RightMouseButton"));
 		//장비 아이템만 장착 가능
+		//SlotNumber 80~83은 장착아이템 칸 번호
 		if (!ItemObjectData->bIsCountableItem)
 		{
-			//ItemData에 아이템 정보를 보내라고 알려줌
-			ItemObjectData->SetPlayerEquipSetting();
+			if (SlotNumber < 80)
+			{
+				//장착 아이템을 장비 칸으로 이동
+				OnEquipItems.Broadcast(ItemObjectData, SlotNumber, ItemObjectData->GetEquipItemData()->EquipItemType, ItemSlotType);
+
+				GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Equip Success"));
+			}
+			else
+			{
+				OnMoveEquipItemToEmptySlot.Broadcast(ItemObjectData, SlotNumber);
+
+				GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Release Equip Success"));
+			}
 		}
 	}
 
 	return Reply.NativeReply;
 }
+
+void UDBInventoryBlockWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	Super::NativeOnMouseEnter(InGeometry, InMouseEvent);
+
+	ItemEnterImage->SetVisibility(ESlateVisibility::Visible);
+}
+
+void UDBInventoryBlockWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
+{
+	Super::NativeOnMouseLeave(InMouseEvent);
+
+	ItemEnterImage->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void UDBInventoryBlockWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
+{
+	Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
+
+	if (OutOperation == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Drag Start"));
+
+		TranslucnetImage->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+		UItemDragDropOperation* ItemDragDropOperation = NewObject<UItemDragDropOperation>();
+
+		OutOperation = ItemDragDropOperation;
+		ItemDragDropOperation->SlotNumber = SlotNumber;
+		ItemDragDropOperation->SlotType = ItemSlotType;
+
+		//드래그 시 보여줄 이미지 설정
+		if (ItemDragVisualWidget)
+		{
+			ItemDragVisualWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+			ItemDragVisualWidget->ItemTexture = ItemObjectData->GetEquipItemData()->GetItemTexture();
+		}
+		FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
+		ItemDragVisualWidget->SetItemImage(CurrentImageSize / 0.8f);
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Drag failed"));
+	}
+}
+
+bool UDBInventoryBlockWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
+{
+	Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+
+	UItemDragDropOperation* ItemDragDropOperation = Cast<UItemDragDropOperation>(InOperation);
+
+	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Drag End"));
+
+	if (ItemDragDropOperation != nullptr)
+	{
+		//드래그 시 보여줄 이미지 설정
+		if (ItemDragVisualWidget)
+		{
+			ItemDragVisualWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
+		//아이템 위치 변경
+		OnDragSwapItems.Broadcast(ItemDragDropOperation->SlotNumber, ItemDragDropOperation->SlotType, SlotNumber, ItemSlotType);
+
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Drag Success"));
+
+		return true;
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Drag failed"));
+		return false;
+	}
+}
+
+#pragma endregion

@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Stat/DBCharacterStatComponent.h"
 #include "GameData/DBCharacterEquipItems.h"
+#include "Item/DBItemData.h"
 #include "DBInventoryWidget.generated.h"
 
 UCLASS()
@@ -23,34 +24,42 @@ public:
 	void AddEquipItem(FName ItemID);
 	void AddCountableItem(FName ItemID, int32 ItemCount);
 
-	void SettingEquipItemForPlayer(UDBItemObject* ItemObject);
+	void SettingEquipItemForPlayer(UDBItemObject* ItemObject, int FromSlotNumber, EEquipItemType FromEquipItemType, EItemSlotType FromItemSlotType);
 
 	UDBCharacterStatComponent* CharacterStat;
 
 protected:
 
 //ItemSection
-	UFUNCTION(BlueprintCallable)
-	void InventoryItemClicked(UObject* Item);
-
+//Variables
 	UPROPERTY(EditAnywhere)
 	TArray<class UDBInventoryBlockWidget*> ItemSlots;
 
 	int32 CanInputItemSlotIndex;
+
+//Functions
+	void DragSwapItems(int FromItemNumber, EItemSlotType FromItemSlotType, int ToItemNumber, EItemSlotType ToItemSlotType);
+	void EquipSwapItems(int FromItemNumber, EItemSlotType FromItemSlotType, EEquipItemType EquipItemType, EItemSlotType ToItemSlotType);
+	void SetCharacterItemStat(FDBCharacterStat NewEquipStat, int32 ItemType);
+	void MoveEquipItemToEmptySlot(UDBItemObject* ItemObject, int ItemSlotNumber);
+	void SettingCharacterEquipStats(UDBItemObject* ItemObject, int ItemSlotNumber);
+
+	UFUNCTION(BlueprintCallable)
+	void InventoryItemClicked(UObject* Item);
 
 //CharacterEquipItems
 	UPROPERTY(Transient, VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	FDBCharacterEquipItems CharacterEquipStats;
 
 	UPROPERTY()
-	TObjectPtr<class UImage> HeadImage;
+	TObjectPtr<class UDBInventoryBlockWidget> EquipHeadItem;
 
 	UPROPERTY()
-	TObjectPtr<class UImage> BodyImage;
+	TObjectPtr<class UDBInventoryBlockWidget> EquipBodyItem;
 
 	UPROPERTY()
-	TObjectPtr<class UImage> ShoesImage;
+	TObjectPtr<class UDBInventoryBlockWidget> EquipWeaponItem;
 
 	UPROPERTY()
-	TObjectPtr<class UImage> WeaponImage;
+	TObjectPtr<class UDBInventoryBlockWidget> EquipShoesItem;
 };

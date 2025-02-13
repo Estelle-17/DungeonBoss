@@ -21,6 +21,13 @@ enum class ECountableItemType : uint8
 	Material = 0,
 };
 
+UENUM(BlueprintType)
+enum class EItemSlotType : uint8
+{
+	None = 0,
+	Item
+};
+
 /**
  * 
  */

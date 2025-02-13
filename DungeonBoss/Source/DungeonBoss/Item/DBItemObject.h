@@ -11,7 +11,6 @@
 #include "DBItemObject.generated.h"
 
 DECLARE_MULTICAST_DELEGATE(FOnSetItemCount);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnPlayerSetEquipItem, UDBItemObject* /*EquipItemObject*/);
 /**
  * 
  */
@@ -28,7 +27,6 @@ public:
 //UDBEquipItemData
 	FORCEINLINE UDBEquipItemData* GetEquipItemData() { return EquipItemData; }
 
-	FORCEINLINE void SetPlayerEquipSetting() { OnPlayerSetEquipItem.Broadcast(this); }
 //UDBCountableItemData
 	FORCEINLINE UDBCountableItemData* GetCountableItemData() { return CountableItemData; }
 
@@ -43,7 +41,6 @@ public:
 	uint8 bIsCountableItem = 0;
 
 	FOnSetItemCount OnSetItemCount;
-	FOnPlayerSetEquipItem OnPlayerSetEquipItem;
 	
 private:
 	UDBEquipItemData* EquipItemData;

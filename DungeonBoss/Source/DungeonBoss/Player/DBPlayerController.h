@@ -53,6 +53,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
 	TObjectPtr<class UDBMultiUIWidget> DBMultiUIWidget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
+	TSubclassOf<class UDBItemDragVisualWidget> DBItemDragVisualWidgetClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
+	TObjectPtr<class UDBItemDragVisualWidget> DBItemDragVisualWidget;
+
 	bool bIsCanMultiUIWidgetOn;
 
 protected:
@@ -62,6 +68,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InteractionAction;
 
+//Functions
+public:
+	FORCEINLINE UDBItemDragVisualWidget* GetItemDragVisualWidget() { return DBItemDragVisualWidget; }
+
+protected:
 	void PlayerInventoryAction(const FInputActionValue& Value);
 	void PlayerInteractionAction(const FInputActionValue& Value);
 

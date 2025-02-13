@@ -6,6 +6,7 @@
 #include "UI/DBHUDWidget.h"
 #include "UI/DBInventoryWidget.h"
 #include "UI/DBMultiUIWidget.h"
+#include "UI/DBItemDragVisualWidget.h"
 #include "EnhancedInputComponent.h"
 
 ADBPlayerController::ADBPlayerController()
@@ -20,6 +21,12 @@ ADBPlayerController::ADBPlayerController()
 	if (DBInventoryWidgetRef.Class)
 	{
 		DBInventoryWidgetClass = DBInventoryWidgetRef.Class;
+	}
+
+	static ConstructorHelpers::FClassFinder<UDBItemDragVisualWidget> DBItemDragVisualWidgetRef(TEXT("/Game/UI/Item/WBP_ItemDragVisual.WBP_ItemDragVisual_C"));
+	if (DBItemDragVisualWidgetRef.Class)
+	{
+		DBItemDragVisualWidgetClass = DBItemDragVisualWidgetRef.Class;
 	}
 
 	static ConstructorHelpers::FClassFinder<UDBMultiUIWidget> DBMultiUIWidgetRef(TEXT("/Game/UI/WBP_DBMultiUI.WBP_DBMultiUI_C"));
@@ -93,12 +100,19 @@ void ADBPlayerController::BeginPlay()
 		{
 			DBHUDWidget->AddToViewport();
 		}
-
+		
+		DBItemDragVisualWidget = CreateWidget<UDBItemDragVisualWidget>(this, DBItemDragVisualWidgetClass);
 		DBInventoryWidget = CreateWidget<UDBInventoryWidget>(this, DBInventoryWidgetClass);
 		if (DBInventoryWidget)
 		{
 			DBInventoryWidget->AddToViewport();
 			DBInventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		//DBItemDragVisualWidget생성은 먼저하되 AddToViewport를 늦게 진행하여 UI가 앞으로 오도록 해줌
+		if (DBItemDragVisualWidget)
+		{
+			DBItemDragVisualWidget->AddToViewport();
+			DBItemDragVisualWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
 		DBMultiUIWidget = CreateWidget<UDBMultiUIWidget>(this, DBMultiUIWidgetClass);
