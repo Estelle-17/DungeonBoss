@@ -76,6 +76,10 @@ void UDBInventoryBlockWidget::SetEquipItemSetting()
 
 void UDBInventoryBlockWidget::SetCountableItemSetting()
 {
+	//수량이 변경되었을 때 숫자 변경을 위한 Delegate에 함수 등록
+	ItemObjectData->OnSetItemCount.Clear();
+	ItemObjectData->OnSetItemCount.AddUObject(this, &UDBInventoryBlockWidget::SetCountableItemSetting);
+
 	if (ItemCount)
 	{
 		ItemCount->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemObjectData->GetItemCount())));
@@ -195,7 +199,15 @@ void UDBInventoryBlockWidget::NativeOnDragDetected(const FGeometry& InGeometry, 
 		if (ItemDragVisualWidget)
 		{
 			ItemDragVisualWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
-			ItemDragVisualWidget->ItemTexture = ItemObjectData->GetEquipItemData()->GetItemTexture();
+			if (ItemObjectData->bIsCountableItem)
+			{
+				ItemDragVisualWidget->ItemTexture = ItemObjectData->GetCountableItemData()->GetItemTexture();
+			}
+			else
+			{
+				ItemDragVisualWidget->ItemTexture = ItemObjectData->GetEquipItemData()->GetItemTexture();
+			}
+
 		}
 		FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
 		ItemDragVisualWidget->SetItemImage(CurrentImageSize / 0.8f);
@@ -204,6 +216,25 @@ void UDBInventoryBlockWidget::NativeOnDragDetected(const FGeometry& InGeometry, 
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Drag failed"));
 	}
+}
+
+void UDBInventoryBlockWidget::NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
+{
+	Super::NativeOnDragCancelled(InDragDropEvent, InOperation);
+
+	//드래그 시 보여줄 이미지 설정
+	if (ItemDragVisualWidget)
+	{
+		ItemDragVisualWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	//드래그 시작한 아이템 이미지 다시 밝게 변경
+	SetTranslucnetImageDisable();
+
+	//UDragDropOperation 데이터 삭제
+	InOperation = nullptr;
+
+	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Drag Cancelled"));
 }
 
 bool UDBInventoryBlockWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)

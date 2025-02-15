@@ -10,7 +10,7 @@ struct FDBCharacterEquipItems
 	GENERATED_BODY()
 
 public:
-	FDBCharacterEquipItems() {}
+	FDBCharacterEquipItems() : WeaponEquipItem(nullptr), HeadEquipItem(nullptr), BodyEquipItem(nullptr), ShoesEquipItem(nullptr){}
 
 	UPROPERTY(Transient, BlueprintReadWrite, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	UDBItemObject* WeaponEquipItem;

@@ -35,13 +35,17 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TArray<class UDBInventoryBlockWidget*> ItemSlots;
 
-	int32 CanInputItemSlotIndex;
+	UPROPERTY(EditAnywhere)
+	TMap<FName, UDBItemObject*> CountableItems;
 
 //Functions
+	//아이템 이동 관련 함수
 	void DragSwapItems(int FromItemNumber, EItemSlotType FromItemSlotType, int ToItemNumber, EItemSlotType ToItemSlotType);
 	void EquipSwapItems(int FromItemNumber, EItemSlotType FromItemSlotType, EEquipItemType EquipItemType, EItemSlotType ToItemSlotType);
-	void SetCharacterItemStat(FDBCharacterStat NewEquipStat, int32 ItemType);
 	void MoveEquipItemToEmptySlot(UDBItemObject* ItemObject, int ItemSlotNumber);
+	int CheckEmptyItemSlot();
+	//캐릭터 스탯 관련 함수
+	void SetCharacterItemStat(FDBCharacterStat NewEquipStat, int32 ItemType);
 	void SettingCharacterEquipStats(UDBItemObject* ItemObject, int ItemSlotNumber);
 
 	UFUNCTION(BlueprintCallable)

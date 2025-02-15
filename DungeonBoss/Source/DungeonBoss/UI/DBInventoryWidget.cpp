@@ -33,7 +33,6 @@ void UDBInventoryWidget::NativeConstruct()
 
 		ItemSlots.Add(InventoryBlockWidget);
 	}
-	CanInputItemSlotIndex = 0;
 	
 	//UE_LOG(LogTemp, Log, TEXT("ItemSlot Count : %d"), ItemSlots.Num());
 
@@ -98,6 +97,9 @@ void UDBInventoryWidget::NativeConstruct()
 	AddEquipItem(TEXT("SHOES_001"));
 	AddEquipItem(TEXT("SHOES_001"));
 	AddEquipItem(TEXT("SHOES_001"));
+	AddCountableItem(TEXT("BOSS_01_01"), 10);
+	AddCountableItem(TEXT("BOSS_01_01"), 5);
+	AddCountableItem(TEXT("BOSS_01_02"), 5);
 }
 
 void UDBInventoryWidget::AddEquipItem(FName ItemID)
@@ -111,30 +113,37 @@ void UDBInventoryWidget::AddEquipItem(FName ItemID)
 	if (EquipItemData)
 	{	
 		//아이템을 인벤토리에 넣어줌
+		int CanInputItemSlotIndex = CheckEmptyItemSlot();
 		UE_LOG(LogTemp, Log, TEXT("%s"), *ItemSlots[CanInputItemSlotIndex]->GetName());
 		ItemSlots[CanInputItemSlotIndex]->SetItemSetting(ItemObject);
 		ItemSlots[CanInputItemSlotIndex]->ItemSlotType = EItemSlotType::Item;
-		CanInputItemSlotIndex++;
 	}
 }
 
-void UDBInventoryWidget::AddCountableItem(FName ItemID, int32 ItemCount)
+void UDBInventoryWidget::AddCountableItem(FName ItemID, int ItemCount)
 {
 	//UDBCountableItemData* CountableItemData = UDBItemSingleton::Get().AddCountableItem(ItemID, ItemCount);
 	//이미 인벤토리에 아이템이 존재하는지 확인
-	if (UDBItemSingleton::Get().IsContainCountableItem(ItemID))
-	{
-		UDBItemObject* ItemObject = UDBItemSingleton::Get().GetCountableItemObject(ItemID);
+	if (CountableItems.Contains(ItemID))
+	{;
 		//아이템이 존재할 시 불러올 방법 제작해야함
-		ItemObject->SetItemCount(ItemCount);
+		CountableItems[ItemID]->SetItemCount(ItemCount);
 	}
 	else
 	{
 		UDBItemObject* ItemObject = NewObject<UDBItemObject>(this, UDBItemObject::StaticClass());
-		ItemObject->MakeCountableItemData(ItemID, ItemCount);
 
-		//겹칠 수 있는 새로운 아이템을 인벤토리에 넣어줌
+		if (ItemObject)
+		{
+			ItemObject->MakeCountableItemData(ItemID, ItemCount);
+			//겹칠 수 있는 새로운 아이템을 인벤토리에 넣어줌
+			CountableItems.Emplace(ItemID, ItemObject);
 
+			//아이템을 인벤토리에 넣어줌
+			int CanInputItemSlotIndex = CheckEmptyItemSlot();
+			ItemSlots[CanInputItemSlotIndex]->SetItemSetting(ItemObject);
+			ItemSlots[CanInputItemSlotIndex]->ItemSlotType = EItemSlotType::Item;
+		}
 	}
 }
 
@@ -385,6 +394,19 @@ void UDBInventoryWidget::MoveEquipItemToEmptySlot(UDBItemObject* ItemObject, int
 			break;
 		}
 	}
+}
+
+int UDBInventoryWidget::CheckEmptyItemSlot()
+{
+	for (int index = 0; index < 80; index++)
+	{
+		if (ItemSlots[index]->ItemSlotType == EItemSlotType::None)
+		{
+			return index;
+		}
+	}
+	
+	return -1;
 }
 
 void UDBInventoryWidget::SettingCharacterEquipStats(UDBItemObject* ItemObject, int ItemSlotNumber)

@@ -21,7 +21,7 @@ void UDBItemObject::MakeEquipItemData(FName ItemID)
 	}
 }
 
-void UDBItemObject::MakeCountableItemData(FName ItemID, int32 ItemCount)
+void UDBItemObject::MakeCountableItemData(FName ItemID, int ItemCount)
 {
 	CountableItemData = NewObject<UDBCountableItemData>(this, UDBCountableItemData::StaticClass());
 	CountableItemData->SetCountableItemStat(ItemID, ItemCount);

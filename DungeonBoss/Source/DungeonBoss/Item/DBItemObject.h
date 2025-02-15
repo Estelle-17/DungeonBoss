@@ -30,13 +30,13 @@ public:
 //UDBCountableItemData
 	FORCEINLINE UDBCountableItemData* GetCountableItemData() { return CountableItemData; }
 
-	FORCEINLINE void SetItemCount(int32 Count) { CountableItemCount += Count; OnSetItemCount.Broadcast(); }
+	FORCEINLINE void SetItemCount(int Count) { CountableItemCount += Count; OnSetItemCount.Broadcast(); }
 	FORCEINLINE void SetItemCount() { OnSetItemCount.Broadcast(); }
-	FORCEINLINE const int32 GetItemCount() { return CountableItemCount; }
+	FORCEINLINE const int GetItemCount() { return CountableItemCount; }
 
 public:
 	void MakeEquipItemData(FName ItemID);
-	void MakeCountableItemData(FName ItemID, int32 ItemCount);
+	void MakeCountableItemData(FName ItemID, int ItemCount);
 
 	uint8 bIsCountableItem = 0;
 
@@ -48,5 +48,5 @@ private:
 	UDBCountableItemData* CountableItemData;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Stat, Meta = (AllowPrivateAccess = "true"))
-	int32 CountableItemCount = 0;
+	int CountableItemCount = 0;
 };
