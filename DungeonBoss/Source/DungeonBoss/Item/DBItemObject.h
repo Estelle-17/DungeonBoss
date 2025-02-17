@@ -35,10 +35,12 @@ public:
 	FORCEINLINE const int GetItemCount() { return CountableItemCount; }
 
 public:
-	void MakeEquipItemData(FName ItemID);
-	void MakeCountableItemData(FName ItemID, int ItemCount);
+	void MakeEquipItemData(FName NewItemID);
+	void MakeCountableItemData(FName NewItemID, int ItemCount);
 
 	uint8 bIsCountableItem = 0;
+
+	FName ItemID;
 
 	FOnSetItemCount OnSetItemCount;
 	

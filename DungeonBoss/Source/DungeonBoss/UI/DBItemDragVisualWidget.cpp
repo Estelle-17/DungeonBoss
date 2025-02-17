@@ -35,9 +35,13 @@ void UDBItemDragVisualWidget::NativeTick(const FGeometry& MyGeometry, float InDe
 
 void UDBItemDragVisualWidget::SetItemImage(FVector2D ImageSize)
 {
-	ItemImage->SetDesiredSizeOverride(ImageSize);
+	//ItemTexture에 저장된 이미지가 있을 경우
+	if (ItemTexture)
+	{
+		ItemImage->SetDesiredSizeOverride(ImageSize);
 
-	FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
-	ItemImage->SetBrushFromTexture(ItemTexture);
-	ItemImage->SetDesiredSizeOverride(CurrentImageSize);
+		FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
+		ItemImage->SetBrushFromTexture(ItemTexture);
+		ItemImage->SetDesiredSizeOverride(CurrentImageSize);
+	}
 }

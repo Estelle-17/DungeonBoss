@@ -22,7 +22,7 @@ protected:
 
 public:
 	void AddEquipItem(FName ItemID);
-	void AddCountableItem(FName ItemID, int32 ItemCount);
+	void AddCountableItem(FName ItemID, int ItemCount, bool bIsItemOverlap);
 
 	void SettingEquipItemForPlayer(UDBItemObject* ItemObject, int FromSlotNumber, EEquipItemType FromEquipItemType, EItemSlotType FromItemSlotType);
 
@@ -35,15 +35,13 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TArray<class UDBInventoryBlockWidget*> ItemSlots;
 
-	UPROPERTY(EditAnywhere)
-	TMap<FName, UDBItemObject*> CountableItems;
-
 //Functions
 	//아이템 이동 관련 함수
 	void DragSwapItems(int FromItemNumber, EItemSlotType FromItemSlotType, int ToItemNumber, EItemSlotType ToItemSlotType);
 	void EquipSwapItems(int FromItemNumber, EItemSlotType FromItemSlotType, EEquipItemType EquipItemType, EItemSlotType ToItemSlotType);
 	void MoveEquipItemToEmptySlot(UDBItemObject* ItemObject, int ItemSlotNumber);
 	int CheckEmptyItemSlot();
+	int FindCountableItem(FName NewItemID);
 	//캐릭터 스탯 관련 함수
 	void SetCharacterItemStat(FDBCharacterStat NewEquipStat, int32 ItemType);
 	void SettingCharacterEquipStats(UDBItemObject* ItemObject, int ItemSlotNumber);
@@ -66,4 +64,43 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<class UDBInventoryBlockWidget> EquipShoesItem;
+
+// Variables
+protected:
+	float DivideItemCount;
+
+	UPROPERTY()
+	class UDBItemObject* CurrentItemObject;
+
+//Widget
+//Variables
+public:
+	UPROPERTY()
+	class UCanvasPanel* ItemCountScrollBarCanvas;
+
+protected:
+	UPROPERTY()
+	class USlider* CountSlider;
+
+	UPROPERTY()
+	class UTextBlock* MinCountText;
+
+	UPROPERTY()
+	class UTextBlock* MaxCountText;
+
+	UPROPERTY()
+	class UButton* OKButton;
+
+//Function
+public:
+	void SetSliderSetting(UDBItemObject* ItemObject, int MaxCount);
+
+protected:
+	UFUNCTION()
+	void DivideItem();
+
+//Slider Setting
+public:
+	UFUNCTION()
+	void ChangeCountText(float Value);
 };

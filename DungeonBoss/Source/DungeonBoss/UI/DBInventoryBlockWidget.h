@@ -14,6 +14,7 @@
 DECLARE_MULTICAST_DELEGATE_FourParams(FOnDragSwapItems, int /*FromItemNumber*/, EItemSlotType /*FromItemSlotType*/, int /*ToItemNumber*/, EItemSlotType /*ToItemSlotType*/)
 DECLARE_MULTICAST_DELEGATE_FourParams(FOnEquipItems, UDBItemObject* /*FromItemObject*/, int /*FromItemNumber*/, EEquipItemType /*FromEquipItemType*/, EItemSlotType /*FromItemSlotType*/)
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMoveEquipItemToEmptySlot, UDBItemObject* /*ItemObject*/, int /*ItemSlotNumber*/)
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnDivideItemSlider, UDBItemObject* /*ItemObject*/, int /*MaxCount*/)
 
 UCLASS()
 class DUNGEONBOSS_API UDBInventoryBlockWidget : public UUserWidget
@@ -36,11 +37,17 @@ public:
 	class UDBItemDragVisualWidget* ItemDragVisualWidget;
 
 	UPROPERTY()
+	class UDBItemCountScrollBarWidget* ItemCountScrollBarWidget;
+
+	UPROPERTY()
 	uint8 bIsEquipSlot;
+
+	class ADBPlayerController* PlayerController;
 
 	FOnDragSwapItems OnDragSwapItems;
 	FOnEquipItems OnEquipItems;
 	FOnMoveEquipItemToEmptySlot OnMoveEquipItemToEmptySlot;
+	FOnDivideItemSlider OnDivideItemSlider;
 
 //Functions
 public:

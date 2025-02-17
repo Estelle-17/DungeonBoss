@@ -8,6 +8,7 @@
 #include "Item/ItemDragDropOperation.h"
 #include "Player/DBPlayerController.h"
 #include "UI/DBItemDragVisualWidget.h"
+#include "UI/DBItemCountScrollBarWidget.h"
 
 UDBInventoryBlockWidget::UDBInventoryBlockWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -34,11 +35,12 @@ void UDBInventoryBlockWidget::NativeConstruct()
 	ItemSlotType = EItemSlotType::None;
 	bIsEquipSlot = false;
 
-	ADBPlayerController* PlayerController = Cast<ADBPlayerController>(GetWorld()->GetFirstPlayerController());
+	PlayerController = Cast<ADBPlayerController>(GetWorld()->GetFirstPlayerController());
 	//PlayerContorller에서 ItemDragVisualWidget가져오기
 	if (PlayerController)
 	{
 		ItemDragVisualWidget = PlayerController->GetItemDragVisualWidget();
+		ItemCountScrollBarWidget = PlayerController->GetItemCountScrollBarWidget();
 	}
 }
 
@@ -84,7 +86,7 @@ void UDBInventoryBlockWidget::SetCountableItemSetting()
 	{
 		ItemCount->SetText(FText::FromString(FString::Printf(TEXT("%d"), ItemObjectData->GetItemCount())));
 	}
-	if (ItemImage)
+	if (ItemImage && ItemObjectData)
 	{
 		FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
 		ItemImage->SetBrushFromTexture(ItemObjectData->GetCountableItemData()->GetItemTexture());
@@ -130,10 +132,18 @@ FReply UDBInventoryBlockWidget::NativeOnMouseButtonDown(const FGeometry& InGeome
 	//좌클릭 입력이 들어왔을 경우
 	if (InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Drag : LeftMouseButton"));
-		
-		if (ItemSlotType == EItemSlotType::Item)
+		//만약 Ctrl키도 같이 눌렸다면
+		if (PlayerController->bIsCtrlClicked && ItemObjectData->bIsCountableItem)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Divide Item"));
+
+			//Widget위치 변경
+			OnDivideItemSlider.Broadcast(ItemObjectData, ItemObjectData->GetItemCount());
+		}
+		else if (ItemSlotType == EItemSlotType::Item)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Drag : LeftMouseButton"));
+
 			Reply = UWidgetBlueprintLibrary::DetectDragIfPressed(InMouseEvent, this, EKeys::LeftMouseButton);
 		}
 	}
@@ -253,6 +263,11 @@ bool UDBInventoryBlockWidget::NativeOnDrop(const FGeometry& InGeometry, const FD
 			ItemDragVisualWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
+		//제자리에 다시 드롭했을 시
+		if (ItemDragDropOperation->SlotNumber == SlotNumber)
+		{
+			return false;
+		}
 		//아이템 위치 변경
 		OnDragSwapItems.Broadcast(ItemDragDropOperation->SlotNumber, ItemDragDropOperation->SlotType, SlotNumber, ItemSlotType);
 

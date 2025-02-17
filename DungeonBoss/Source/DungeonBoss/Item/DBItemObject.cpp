@@ -8,12 +8,13 @@ UDBItemObject::UDBItemObject()
 	bIsCountableItem = false;
 }
 
-void UDBItemObject::MakeEquipItemData(FName ItemID)
+void UDBItemObject::MakeEquipItemData(FName NewItemID)
 {
 	EquipItemData = NewObject<UDBEquipItemData>(this, UDBEquipItemData::StaticClass());
-	EquipItemData->SetEquipStat(ItemID);
+	EquipItemData->SetEquipStat(NewItemID);
 
 	//UDBItemSingleton::Get().AddEquipItem(ItemID, this);
+	ItemID = NewItemID;
 
 	if (EquipItemData)
 	{
@@ -21,11 +22,13 @@ void UDBItemObject::MakeEquipItemData(FName ItemID)
 	}
 }
 
-void UDBItemObject::MakeCountableItemData(FName ItemID, int ItemCount)
+void UDBItemObject::MakeCountableItemData(FName NewItemID, int ItemCount)
 {
 	CountableItemData = NewObject<UDBCountableItemData>(this, UDBCountableItemData::StaticClass());
-	CountableItemData->SetCountableItemStat(ItemID, ItemCount);
+	CountableItemData->SetCountableItemStat(NewItemID, ItemCount);
 	CountableItemCount = ItemCount;
+
+	ItemID = NewItemID;
 
 	//UDBItemSingleton::Get().AddCountableItem(ItemID, this);
 	bIsCountableItem = true;

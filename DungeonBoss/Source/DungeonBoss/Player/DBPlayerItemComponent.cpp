@@ -15,9 +15,9 @@ void UDBPlayerItemComponent::BeginPlay()
 	
 }
 
-void UDBPlayerItemComponent::UpdateCountableItem(FName ItemID, int32 ItemCount)
+void UDBPlayerItemComponent::UpdateCountableItem(FName ItemID, int ItemCount, bool bIsItemOverlap)
 {
-	OnAddCountableItem.Broadcast(ItemID, ItemCount);
+	OnAddCountableItem.Broadcast(ItemID, ItemCount, bIsItemOverlap);
 }
 
 void UDBPlayerItemComponent::UpdateEquipItem(FName ItemID)

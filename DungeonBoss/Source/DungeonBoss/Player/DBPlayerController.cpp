@@ -7,6 +7,7 @@
 #include "UI/DBInventoryWidget.h"
 #include "UI/DBMultiUIWidget.h"
 #include "UI/DBItemDragVisualWidget.h"
+#include "UI/DBItemCountScrollBarWidget.h"
 #include "EnhancedInputComponent.h"
 
 ADBPlayerController::ADBPlayerController()
@@ -35,6 +36,12 @@ ADBPlayerController::ADBPlayerController()
 		DBMultiUIWidgetClass = DBMultiUIWidgetRef.Class;
 	}
 
+	static ConstructorHelpers::FClassFinder<UDBItemCountScrollBarWidget> DBItemCountScrollBarWidgetRef(TEXT("/Game/UI/Item/WBP_ItemCountScrollBar.WBP_ItemCountScrollBar_C"));
+	if (DBItemCountScrollBarWidgetRef.Class)
+	{
+		DBItemCountScrollBarWidgetClass = DBItemCountScrollBarWidgetRef.Class;
+	}
+
 	static ConstructorHelpers::FObjectFinder<UInputAction> InventoryRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Inventory.IA_Player_Inventory'");
 	if (InventoryRef.Object)
 	{
@@ -47,10 +54,17 @@ ADBPlayerController::ADBPlayerController()
 		InteractionAction = InteractionRef.Object;
 	}
 
+	static ConstructorHelpers::FObjectFinder<UInputAction> DivideItemRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_DivideItem.IA_Player_DivideItem'");
+	if (DivideItemRef.Object)
+	{
+		DivideItemAction = DivideItemRef.Object;
+	}
+
 	NetworkSetting = CreateDefaultSubobject<ADBNetworkSetting>(TEXT("NetworkSetting"));
 
 	bShowMouseCursor = false;
 	bIsCanMultiUIWidgetOn = false;
+	bIsCtrlClicked = false;
 }
 
 //네트워크와 무관하게 액터를 초기화할 때 사용
@@ -144,6 +158,8 @@ void ADBPlayerController::SetupInputComponent()
 
 	enhancedInputComponent->BindAction(InventoryAction, ETriggerEvent::Triggered, this, &ADBPlayerController::PlayerInventoryAction);
 	enhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &ADBPlayerController::PlayerInteractionAction);
+	enhancedInputComponent->BindAction(DivideItemAction, ETriggerEvent::Started, this, &ADBPlayerController::PlayerDivideItemActionBegin);
+	enhancedInputComponent->BindAction(DivideItemAction, ETriggerEvent::Canceled, this, &ADBPlayerController::PlayerDivideItemActionEnd);
 }
 
 void ADBPlayerController::SetMultiUIWidgetDisable()
@@ -187,3 +203,19 @@ void ADBPlayerController::PlayerInteractionAction(const FInputActionValue& Value
 		bShowMouseCursor = false;
 	}
 }
+
+void ADBPlayerController::PlayerDivideItemActionBegin(const FInputActionValue& Value)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Ctrl On"));
+
+	bIsCtrlClicked = true;
+}
+
+void ADBPlayerController::PlayerDivideItemActionEnd(const FInputActionValue& Value)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Ctrl Off"));
+
+	bIsCtrlClicked = false;
+}
+
+

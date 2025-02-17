@@ -4,6 +4,9 @@
 #include "Components/TileView.h"
 #include "Components/Button.h"
 #include "Components/Image.h"
+#include "Components/Slider.h"
+#include "Components/TextBlock.h"
+#include "Components/CanvasPanel.h"
 #include "UI/DBInventoryBlockWidget.h"
 #include "Interface/DBCharacterHUDInterface.h"
 #include "GameData/DBItemSingleton.h"
@@ -30,6 +33,7 @@ void UDBInventoryWidget::NativeConstruct()
 		InventoryBlockWidget->SlotNumber = index;
 		InventoryBlockWidget->OnDragSwapItems.AddUObject(this, &UDBInventoryWidget::DragSwapItems);
 		InventoryBlockWidget->OnEquipItems.AddUObject(this, &UDBInventoryWidget::SettingEquipItemForPlayer);
+		InventoryBlockWidget->OnDivideItemSlider.AddUObject(this, &UDBInventoryWidget::SetSliderSetting);
 
 		ItemSlots.Add(InventoryBlockWidget);
 	}
@@ -86,6 +90,28 @@ void UDBInventoryWidget::NativeConstruct()
 		CharacterStat = PlayerPawn->GetCharacterStatComponent();
 	}
 
+//ItemCountScrollBar Setting
+	ItemCountScrollBarCanvas = Cast<UCanvasPanel>(GetWidgetFromName(TEXT("ItemCountScrollBarCanvas")));
+	ensure(ItemCountScrollBarCanvas);
+
+	CountSlider = Cast<USlider>(GetWidgetFromName(TEXT("CountSlider")));
+	ensure(CountSlider);
+	CountSlider->OnValueChanged.AddDynamic(this, &UDBInventoryWidget::ChangeCountText);
+
+	MinCountText = Cast<UTextBlock>(GetWidgetFromName(TEXT("MinCountText")));
+	ensure(MinCountText);
+
+	MaxCountText = Cast<UTextBlock>(GetWidgetFromName(TEXT("MaxCountText")));
+	ensure(MaxCountText);
+
+	OKButton = Cast<UButton>(GetWidgetFromName(TEXT("OKButton")));
+	ensure(OKButton);
+	OKButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::DivideItem);
+
+	ItemCountScrollBarCanvas->SetVisibility(ESlateVisibility::Collapsed);
+	DivideItemCount = 1;
+
+//AddItem
 	AddEquipItem(TEXT("WEAPON_001"));
 	AddEquipItem(TEXT("WEAPON_001"));
 	AddEquipItem(TEXT("HEAD_001"));
@@ -97,9 +123,9 @@ void UDBInventoryWidget::NativeConstruct()
 	AddEquipItem(TEXT("SHOES_001"));
 	AddEquipItem(TEXT("SHOES_001"));
 	AddEquipItem(TEXT("SHOES_001"));
-	AddCountableItem(TEXT("BOSS_01_01"), 10);
-	AddCountableItem(TEXT("BOSS_01_01"), 5);
-	AddCountableItem(TEXT("BOSS_01_02"), 5);
+	AddCountableItem(TEXT("BOSS_01_01"), 10, true);
+	AddCountableItem(TEXT("BOSS_01_01"), 5, true);
+	AddCountableItem(TEXT("BOSS_01_02"), 5, true);
 }
 
 void UDBInventoryWidget::AddEquipItem(FName ItemID)
@@ -120,14 +146,17 @@ void UDBInventoryWidget::AddEquipItem(FName ItemID)
 	}
 }
 
-void UDBInventoryWidget::AddCountableItem(FName ItemID, int ItemCount)
+void UDBInventoryWidget::AddCountableItem(FName ItemID, int ItemCount, bool bIsItemOverlap)
 {
 	//UDBCountableItemData* CountableItemData = UDBItemSingleton::Get().AddCountableItem(ItemID, ItemCount);
 	//이미 인벤토리에 아이템이 존재하는지 확인
-	if (CountableItems.Contains(ItemID))
-	{;
-		//아이템이 존재할 시 불러올 방법 제작해야함
-		CountableItems[ItemID]->SetItemCount(ItemCount);
+	//CheckCountableItem이 -1일 경우 인벤토리에 아이템이 없다는 뜻
+	int CheckCountableItem = FindCountableItem(ItemID);
+
+	if (CheckCountableItem != -1 && bIsItemOverlap)
+	{
+		//아이템이 존재할 시 갯수 변경
+		ItemSlots[CheckCountableItem]->GetItemObjectData()->SetItemCount(ItemCount);
 	}
 	else
 	{
@@ -136,8 +165,9 @@ void UDBInventoryWidget::AddCountableItem(FName ItemID, int ItemCount)
 		if (ItemObject)
 		{
 			ItemObject->MakeCountableItemData(ItemID, ItemCount);
+
 			//겹칠 수 있는 새로운 아이템을 인벤토리에 넣어줌
-			CountableItems.Emplace(ItemID, ItemObject);
+			//CountableItems.Emplace(ItemID, ItemObject);
 
 			//아이템을 인벤토리에 넣어줌
 			int CanInputItemSlotIndex = CheckEmptyItemSlot();
@@ -230,12 +260,23 @@ void UDBInventoryWidget::DragSwapItems(int FromItemNumber, EItemSlotType FromIte
 	}
 	else
 	{
-		ItemSlots[FromItemNumber]->SetTranslucnetImageDisable();
-		ItemSlots[FromItemNumber]->SetItemSetting(ItemSlots[ToItemNumber]->GetItemObjectData());
-		ItemSlots[FromItemNumber]->ItemSlotType = ToItemSlotType;
+		//두 아이템이 같은 종류의 아이템일 경우 합치기
+		if (ItemSlots[FromItemNumber]->GetItemObjectData()->ItemID == ItemSlots[ToItemNumber]->GetItemObjectData()->ItemID)
+		{
+			ItemSlots[ToItemNumber]->GetItemObjectData()->SetItemCount(ItemSlots[FromItemNumber]->GetItemObjectData()->GetItemCount());
 
-		ItemSlots[ToItemNumber]->SetItemSetting(ItemObject);
-		ItemSlots[ToItemNumber]->ItemSlotType = FromItemSlotType;
+			ItemSlots[FromItemNumber]->SetTranslucnetImageDisable();
+			ItemSlots[FromItemNumber]->ResetInventorySlot();
+		}
+		else
+		{
+			ItemSlots[FromItemNumber]->SetTranslucnetImageDisable();
+			ItemSlots[FromItemNumber]->SetItemSetting(ItemSlots[ToItemNumber]->GetItemObjectData());
+			ItemSlots[FromItemNumber]->ItemSlotType = ToItemSlotType;
+
+			ItemSlots[ToItemNumber]->SetItemSetting(ItemObject);
+			ItemSlots[ToItemNumber]->ItemSlotType = FromItemSlotType;
+		}
 	}
 
 	//장비 창으로 이동 시 장비 스탯 적용
@@ -409,6 +450,23 @@ int UDBInventoryWidget::CheckEmptyItemSlot()
 	return -1;
 }
 
+int UDBInventoryWidget::FindCountableItem(FName NewItemID)
+{
+	for (int index = 0; index < 80; index++)
+	{
+		UDBItemObject* ItemObject = ItemSlots[index]->GetItemObjectData();
+		if (ItemObject)
+		{
+			if (ItemObject->ItemID == NewItemID)
+			{
+				return index;
+			}
+		}
+	}
+
+	return -1;
+}
+
 void UDBInventoryWidget::SettingCharacterEquipStats(UDBItemObject* ItemObject, int ItemSlotNumber)
 {
 	//이전에 장착된 아이템이 있을 경우 제거
@@ -477,3 +535,47 @@ void UDBInventoryWidget::InventoryItemClicked(UObject* Item)
 {
 	UE_LOG(LogTemp, Log, TEXT("Is Clicked! : %s"), *Item->GetFName().ToString())
 }
+
+#pragma region ItemCountSliderBar Setting
+
+void UDBInventoryWidget::SetSliderSetting(UDBItemObject* ItemObject, int MaxCount)
+{
+	ItemCountScrollBarCanvas->SetVisibility(ESlateVisibility::Visible);
+
+	//현재 아이템의 갯수 저장 및 현재 나눌 아이템의 데이터 저장
+	CountSlider->SetMinValue(1);
+	CountSlider->SetMaxValue(MaxCount - 1);
+	CountSlider->SetValue(1);
+
+	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green, FString::Printf(TEXT("Min : %f, Max : %f"), CountSlider->GetMinValue(), CountSlider->GetMaxValue()));
+
+	//눈에 보이는 숫자 설정
+	MinCountText->SetText(FText::FromString(FString::Printf(TEXT("%.0f"), 1.0f)));
+	MaxCountText->SetText(FText::FromString(FString::Printf(TEXT("%.0f"), CountSlider->GetMaxValue())));
+
+	CurrentItemObject = ItemObject;
+}
+
+void UDBInventoryWidget::DivideItem()
+{
+	//나누어진 갯수만큼 아이템을 둘로 나누어줌
+	CurrentItemObject->SetItemCount(int(-DivideItemCount));
+
+	AddCountableItem(CurrentItemObject->ItemID, int(DivideItemCount), false);
+
+	ItemCountScrollBarCanvas->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void UDBInventoryWidget::ChangeCountText(float Value)
+{
+	DivideItemCount = CountSlider->GetValue();
+	DivideItemCount = round(DivideItemCount);
+	CountSlider->SetValue(DivideItemCount);
+	//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green, FString::Printf(TEXT("Value : %.0f"), DivideItemCount));
+
+	//눈에 보이는 숫자 설정
+	MinCountText->SetText(FText::FromString(FString::Printf(TEXT("%.0f"), DivideItemCount)));
+	MaxCountText->SetText(FText::FromString(FString::Printf(TEXT("%.0f"), (CountSlider->GetMaxValue() - DivideItemCount) + 1)));
+}
+
+#pragma endregion

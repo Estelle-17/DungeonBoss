@@ -26,6 +26,10 @@ protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
 //Binding Section
+//Variables
+public:
+	uint8 bIsCtrlClicked;
+//Functions
 public:
 	virtual void SetupInputComponent() override;
 
@@ -59,6 +63,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
 	TObjectPtr<class UDBItemDragVisualWidget> DBItemDragVisualWidget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
+	TSubclassOf<class UDBItemCountScrollBarWidget> DBItemCountScrollBarWidgetClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
+	TObjectPtr<class UDBItemCountScrollBarWidget> DBItemCountScrollBarWidget;
+
 	bool bIsCanMultiUIWidgetOn;
 
 protected:
@@ -68,13 +78,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UInputAction> InteractionAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UInputAction> DivideItemAction;
+
 //Functions
 public:
 	FORCEINLINE UDBItemDragVisualWidget* GetItemDragVisualWidget() { return DBItemDragVisualWidget; }
+	FORCEINLINE UDBItemCountScrollBarWidget* GetItemCountScrollBarWidget() { return DBItemCountScrollBarWidget; }
 
 protected:
 	void PlayerInventoryAction(const FInputActionValue& Value);
 	void PlayerInteractionAction(const FInputActionValue& Value);
+	void PlayerDivideItemActionBegin(const FInputActionValue& Value);
+	void PlayerDivideItemActionEnd(const FInputActionValue& Value);
 
 //Network Section
 protected:
