@@ -20,6 +20,15 @@ UDBItemSingleton::UDBItemSingleton()
 		CountableItemDataTable = CountableItemDataTableRef.Object;
 		check(CountableItemDataTable->GetRowMap().Num() > 0);
 	}
+
+	static ConstructorHelpers::FObjectFinder<UDataTable> MakeItemMenuTableRef(TEXT("/Script/Engine.DataTable'/Game/GameData/DBMakeItemMenuTable.DBMakeItemMenuTable'"));
+	if (nullptr != MakeItemMenuTableRef.Object)
+	{
+		MakeItemMenuTable = MakeItemMenuTableRef.Object;
+		check(MakeItemMenuTable->GetRowMap().Num() > 0);
+
+		MakeItemMenuTable->GetAllRows<FDBMakeItemMenuTable>(TEXT("GetAllRows : MakeItemMenuItems"), MakeItemMenuItems);
+	}
 }
 
 UDBItemSingleton& UDBItemSingleton::Get()

@@ -28,7 +28,7 @@ protected:
 //Binding Section
 //Variables
 public:
-	uint8 bIsCtrlClicked;
+	uint8 bIsRecentlyWidgetCollapsed;
 //Functions
 public:
 	virtual void SetupInputComponent() override;
@@ -37,7 +37,13 @@ public:
 	FORCEINLINE void SetMultiUIWidgetEnable() { bIsCanMultiUIWidgetOn = true; }
 	void SetMultiUIWidgetDisable();
 
+//Timer Section
+//Functions
+public:
+	void SetNextTickEnableCanWidgetCollapsed();
+
 //HUD Section
+//Variables
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
 	TSubclassOf<class UDBHUDWidget> DBHUDWidgetClass;
@@ -69,7 +75,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
 	TObjectPtr<class UDBItemCountScrollBarWidget> DBItemCountScrollBarWidget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
+	TSubclassOf<class UDBEquipNPCWidget> DBEquipNPCWidgetClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
+	TObjectPtr<class UDBEquipNPCWidget> DBEquipNPCWidget;
+
 	bool bIsCanMultiUIWidgetOn;
+	bool bIsCanEquipNPCWidgetOn;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
@@ -85,12 +98,14 @@ protected:
 public:
 	FORCEINLINE UDBItemDragVisualWidget* GetItemDragVisualWidget() { return DBItemDragVisualWidget; }
 	FORCEINLINE UDBItemCountScrollBarWidget* GetItemCountScrollBarWidget() { return DBItemCountScrollBarWidget; }
+	void LoadWidget(UUserWidget* UIWidget);
+	void CollapseWidget(FString WidgetName);
+	bool CheckWidgetVisible();
+
 
 protected:
 	void PlayerInventoryAction(const FInputActionValue& Value);
 	void PlayerInteractionAction(const FInputActionValue& Value);
-	void PlayerDivideItemActionBegin(const FInputActionValue& Value);
-	void PlayerDivideItemActionEnd(const FInputActionValue& Value);
 
 //Network Section
 protected:

@@ -13,6 +13,7 @@
 #include "Item/DBItemObject.h"
 #include "Player/DBPlayerBase.h"
 #include "DBInventoryBlockWidget.h"
+#include "Player/DBPlayerController.h"
 #include "DungeonBoss.h"
 
 UDBInventoryWidget::UDBInventoryWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -108,6 +109,10 @@ void UDBInventoryWidget::NativeConstruct()
 	ensure(OKButton);
 	OKButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::DivideItem);
 
+	CancelButton = Cast<UButton>(GetWidgetFromName(TEXT("CancelButton")));
+	ensure(CancelButton);
+	CancelButton->OnClicked.AddDynamic(this, &UDBInventoryWidget::CancelDivideItem);
+
 	ItemCountScrollBarCanvas->SetVisibility(ESlateVisibility::Collapsed);
 	DivideItemCount = 1;
 
@@ -126,6 +131,7 @@ void UDBInventoryWidget::NativeConstruct()
 	AddCountableItem(TEXT("BOSS_01_01"), 10, true);
 	AddCountableItem(TEXT("BOSS_01_01"), 5, true);
 	AddCountableItem(TEXT("BOSS_01_02"), 5, true);
+
 }
 
 void UDBInventoryWidget::AddEquipItem(FName ItemID)
@@ -250,6 +256,13 @@ void UDBInventoryWidget::DragSwapItems(int FromItemNumber, EItemSlotType FromIte
 {
 	UDBItemObject* ItemObject = ItemSlots[FromItemNumber]->GetItemObjectData();
 	
+	//만약 FromItem이 CountableItem일때 장착 칸으로 이동할 경우 이동X
+	if (ItemSlots[FromItemNumber]->GetItemObjectData()->bIsCountableItem && ToItemNumber >= 80)
+	{
+		ItemSlots[FromItemNumber]->SetTranslucnetImageDisable();
+		return;
+	}
+
 	if (ToItemSlotType == EItemSlotType::None)
 	{
 		ItemSlots[ToItemNumber]->SetItemSetting(ItemObject);
@@ -538,6 +551,30 @@ void UDBInventoryWidget::InventoryItemClicked(UObject* Item)
 
 #pragma region ItemCountSliderBar Setting
 
+FReply UDBInventoryWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	FEventReply Reply;
+	Reply.NativeReply = Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+
+	if (InKeyEvent.GetKey() == EKeys::I || InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Collapse Inventory"));
+
+		ADBPlayerController* PlayerController = Cast<ADBPlayerController>(GetWorld()->GetFirstPlayerController());
+		//PlayerContorller에서 ItemDragVisualWidget가져오기
+		if (PlayerController)
+		{
+			PlayerController->CollapseWidget(TEXT("Inventory"));
+		}
+	}
+
+	return Reply.NativeReply;
+}
+
+#pragma endregion
+
+#pragma region ItemCountSliderBar Setting
+
 void UDBInventoryWidget::SetSliderSetting(UDBItemObject* ItemObject, int MaxCount)
 {
 	ItemCountScrollBarCanvas->SetVisibility(ESlateVisibility::Visible);
@@ -563,6 +600,11 @@ void UDBInventoryWidget::DivideItem()
 
 	AddCountableItem(CurrentItemObject->ItemID, int(DivideItemCount), false);
 
+	ItemCountScrollBarCanvas->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void UDBInventoryWidget::CancelDivideItem()
+{
 	ItemCountScrollBarCanvas->SetVisibility(ESlateVisibility::Collapsed);
 }
 

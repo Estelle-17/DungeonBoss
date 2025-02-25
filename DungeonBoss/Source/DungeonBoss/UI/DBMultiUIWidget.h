@@ -69,4 +69,9 @@ protected:
 	TObjectPtr<class UTextBlock> CheckIPButtonText;
 
 	FOnJoinGameServerDelegate OnJoinGameServerDelegate;
+
+//Input Section
+protected:
+	FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+
 };

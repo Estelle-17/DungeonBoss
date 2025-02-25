@@ -11,6 +11,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "SocketSubsystem.h"
 #include "Interfaces/IPv4/IPv4Address.h"
+#include "Player/DBPlayerController.h"
 
 UDBMultiUIWidget::UDBMultiUIWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -97,4 +98,24 @@ void UDBMultiUIWidget::CoverImageOnOff()
 		CoverImage->SetVisibility(ESlateVisibility::Visible);
 		CheckIPButtonText->SetText(FText::FromString(TEXT("Check IP")));
 	}
+}
+
+FReply UDBMultiUIWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	FEventReply Reply;
+	Reply.NativeReply = Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+
+	if (InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Collapse Inventory"));
+
+		ADBPlayerController* PlayerController = Cast<ADBPlayerController>(GetWorld()->GetFirstPlayerController());
+		//PlayerContorller에서 ItemDragVisualWidget가져오기
+		if (PlayerController)
+		{
+			PlayerController->CollapseWidget(TEXT("MultiUI"));
+		}
+	}
+
+	return Reply.NativeReply;
 }

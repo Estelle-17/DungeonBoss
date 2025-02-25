@@ -8,6 +8,7 @@
 #include "DBCharacterStat.h"
 #include "Item/DBItemObject.h"
 #include "Item/DBCountableItemData.h"
+#include "GameData/DBMakeItemMenuTable.h"
 #include "DBItemSingleton.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogDBItemSingleton, Error, All);
@@ -37,6 +38,7 @@ public:
 	FORCEINLINE UDBItemObject* GetCountableItemObject(FName ItemID) { return CountableItems[ItemID]; }
 	FORCEINLINE bool IsContainCountableItem(FName ItemID) { return CountableItems.Contains(ItemID); }
 
+	FORCEINLINE TArray<FDBMakeItemMenuTable*> GetLoadMakeItemMenuTableData() { return MakeItemMenuItems; }
 
 private:
 	class UDataTable* EquipItemDataTable;
@@ -48,4 +50,8 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	TMap<FName, UDBItemObject*> CountableItems;
+
+	class UDataTable* MakeItemMenuTable;
+
+	TArray<FDBMakeItemMenuTable*> MakeItemMenuItems;
 };

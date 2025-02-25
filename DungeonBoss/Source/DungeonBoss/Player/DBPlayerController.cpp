@@ -8,6 +8,7 @@
 #include "UI/DBMultiUIWidget.h"
 #include "UI/DBItemDragVisualWidget.h"
 #include "UI/DBItemCountScrollBarWidget.h"
+#include "UI/DBEquipNPCWidget.h"
 #include "EnhancedInputComponent.h"
 
 ADBPlayerController::ADBPlayerController()
@@ -42,6 +43,14 @@ ADBPlayerController::ADBPlayerController()
 		DBItemCountScrollBarWidgetClass = DBItemCountScrollBarWidgetRef.Class;
 	}
 
+	static ConstructorHelpers::FClassFinder<UDBEquipNPCWidget> DBEquipNPCWidgetRef(TEXT("/Game/UI/NPC/WBP_EquipNPC.WBP_EquipNPC_C"));
+	if (DBEquipNPCWidgetRef.Class)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Check : %s"), *DBEquipNPCWidgetRef.Class->GetName());
+
+		DBEquipNPCWidgetClass = DBEquipNPCWidgetRef.Class;
+	}
+
 	static ConstructorHelpers::FObjectFinder<UInputAction> InventoryRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Inventory.IA_Player_Inventory'");
 	if (InventoryRef.Object)
 	{
@@ -62,9 +71,9 @@ ADBPlayerController::ADBPlayerController()
 
 	NetworkSetting = CreateDefaultSubobject<ADBNetworkSetting>(TEXT("NetworkSetting"));
 
-	bShowMouseCursor = false;
 	bIsCanMultiUIWidgetOn = false;
-	bIsCtrlClicked = false;
+	bIsCanEquipNPCWidgetOn = true;
+	bIsRecentlyWidgetCollapsed = false;
 }
 
 //네트워크와 무관하게 액터를 초기화할 때 사용
@@ -114,7 +123,7 @@ void ADBPlayerController::BeginPlay()
 		{
 			DBHUDWidget->AddToViewport();
 		}
-		
+
 		DBItemDragVisualWidget = CreateWidget<UDBItemDragVisualWidget>(this, DBItemDragVisualWidgetClass);
 		DBInventoryWidget = CreateWidget<UDBInventoryWidget>(this, DBInventoryWidgetClass);
 		if (DBInventoryWidget)
@@ -132,9 +141,19 @@ void ADBPlayerController::BeginPlay()
 		DBMultiUIWidget = CreateWidget<UDBMultiUIWidget>(this, DBMultiUIWidgetClass);
 		if (DBMultiUIWidget)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("DBMultiUIWidget ON"));
 			DBMultiUIWidget->AddToViewport();
 			DBMultiUIWidget->BindingButtons(NetworkSetting);
 			DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
+		DBEquipNPCWidget = CreateWidget<UDBEquipNPCWidget>(this, DBEquipNPCWidgetClass);
+		if (DBEquipNPCWidget)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Check : %s"), *DBEquipNPCWidget->GetFName().ToString()));
+			DBEquipNPCWidget->SetAllMenuUI();
+			DBEquipNPCWidget->AddToViewport();
+			//DBEquipNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
 
@@ -158,8 +177,6 @@ void ADBPlayerController::SetupInputComponent()
 
 	enhancedInputComponent->BindAction(InventoryAction, ETriggerEvent::Triggered, this, &ADBPlayerController::PlayerInventoryAction);
 	enhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &ADBPlayerController::PlayerInteractionAction);
-	enhancedInputComponent->BindAction(DivideItemAction, ETriggerEvent::Started, this, &ADBPlayerController::PlayerDivideItemActionBegin);
-	enhancedInputComponent->BindAction(DivideItemAction, ETriggerEvent::Canceled, this, &ADBPlayerController::PlayerDivideItemActionEnd);
 }
 
 void ADBPlayerController::SetMultiUIWidgetDisable()
@@ -170,52 +187,131 @@ void ADBPlayerController::SetMultiUIWidgetDisable()
 	if (DBMultiUIWidget)
 	{
 		DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
+		CollapseWidget(TEXT("MultiUI"));
+	}
+}
+
+void ADBPlayerController::SetNextTickEnableCanWidgetCollapsed()
+{
+	//이미 현 프레임에 Widget을 조작했을 경우
+	//다음 틱에 Widget입력이 가능해지도록 도와줌
+	GetWorld()->GetTimerManager().SetTimerForNextTick([&]
+		{
+			bIsRecentlyWidgetCollapsed = false;
+		});
+}
+
+void ADBPlayerController::LoadWidget(UUserWidget* UIWidget)
+{
+	bIsRecentlyWidgetCollapsed = true;
+	SetNextTickEnableCanWidgetCollapsed();
+
+	FInputModeUIOnly InputModeData;
+	//사용할 위젯 지정
+	InputModeData.SetWidgetToFocus(UIWidget->TakeWidget());
+	//마우스를 Viewport에 고정할건지, 자유롭게 하던지 지정
+	InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::LockOnCapture);
+
+	//PlayerController에 적용
+	SetInputMode(InputModeData);
+	//마우스커서 On/Off
+	bShowMouseCursor = true;
+}
+
+void ADBPlayerController::CollapseWidget(FString WidgetName)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Collapse Widget"));
+
+	if (WidgetName.Equals(TEXT("Inventory")))
+	{
+		DBInventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	else if (WidgetName.Equals(TEXT("MultiUI")))
+	{
+		DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	else if (WidgetName.Equals(TEXT("EquipNPC")))
+	{
+		DBEquipNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	//모든 UI위젯이 종료되었을 때
+	if (!CheckWidgetVisible())
+	{
+		bIsRecentlyWidgetCollapsed = true;
+		SetNextTickEnableCanWidgetCollapsed();
+
+		FInputModeGameOnly InputModeData;
+
+		//PlayerController에 적용
+		SetInputMode(InputModeData);
+		//마우스커서 On/Off
 		bShowMouseCursor = false;
 	}
+}
+
+bool ADBPlayerController::CheckWidgetVisible()
+{
+	if (DBInventoryWidget->IsVisible() ||
+		DBMultiUIWidget->IsVisible() ||
+		DBEquipNPCWidget->IsVisible())
+	{
+		return true;
+	}
+
+	return false;
 }
 
 void ADBPlayerController::PlayerInventoryAction(const FInputActionValue& Value)
 {
 	//MultiUI 위젯 상호작용
-	if (DBInventoryWidget->IsVisible())
+	if (!bIsRecentlyWidgetCollapsed)
 	{
-		DBInventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
-		bShowMouseCursor = false;		
-	}
-	else
-	{
-		DBInventoryWidget->SetVisibility(ESlateVisibility::Visible);
-		bShowMouseCursor = true;
+		if (DBInventoryWidget->IsVisible())
+		{
+			DBInventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+			CollapseWidget(TEXT("Inventory"));
+		}
+		else
+		{
+			DBInventoryWidget->SetVisibility(ESlateVisibility::Visible);
+			LoadWidget(CastChecked<UUserWidget>(DBInventoryWidget));
+		}
 	}
 }
 
 void ADBPlayerController::PlayerInteractionAction(const FInputActionValue& Value)
 {
-	if (bIsCanMultiUIWidgetOn)
+	if (!bIsRecentlyWidgetCollapsed)
 	{
-		DBMultiUIWidget->SetVisibility(ESlateVisibility::Visible);
-		bShowMouseCursor = true;
-		//DBMultiUIWidget->SetFocus();
+		if (bIsCanMultiUIWidgetOn)
+		{
+			if (DBMultiUIWidget->IsVisible())
+			{
+				DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
+				CollapseWidget(TEXT("MultiUI"));
+			}
+			else
+			{
+				DBMultiUIWidget->SetVisibility(ESlateVisibility::Visible);
+				LoadWidget(CastChecked<UUserWidget>(DBMultiUIWidget));
+			}
+		}
+
+		if (bIsCanEquipNPCWidgetOn)
+		{
+			if (DBEquipNPCWidget->IsVisible())
+			{
+				DBEquipNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
+				CollapseWidget(TEXT("EquipNPC"));
+			}
+			else
+			{
+				DBEquipNPCWidget->SetVisibility(ESlateVisibility::Visible);
+				LoadWidget(CastChecked<UUserWidget>(DBEquipNPCWidget));
+			}
+		}
 	}
-	else
-	{
-		DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
-		bShowMouseCursor = false;
-	}
-}
-
-void ADBPlayerController::PlayerDivideItemActionBegin(const FInputActionValue& Value)
-{
-	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Ctrl On"));
-
-	bIsCtrlClicked = true;
-}
-
-void ADBPlayerController::PlayerDivideItemActionEnd(const FInputActionValue& Value)
-{
-	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Ctrl Off"));
-
-	bIsCtrlClicked = false;
 }
 
 

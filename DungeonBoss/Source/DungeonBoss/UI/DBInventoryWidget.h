@@ -28,14 +28,14 @@ public:
 
 	UDBCharacterStatComponent* CharacterStat;
 
-protected:
-
 //ItemSection
 //Variables
+public:
 	UPROPERTY(EditAnywhere)
 	TArray<class UDBInventoryBlockWidget*> ItemSlots;
 
 //Functions
+public:
 	//아이템 이동 관련 함수
 	void DragSwapItems(int FromItemNumber, EItemSlotType FromItemSlotType, int ToItemNumber, EItemSlotType ToItemSlotType);
 	void EquipSwapItems(int FromItemNumber, EItemSlotType FromItemSlotType, EEquipItemType EquipItemType, EItemSlotType ToItemSlotType);
@@ -50,6 +50,7 @@ protected:
 	void InventoryItemClicked(UObject* Item);
 
 //CharacterEquipItems
+protected:
 	UPROPERTY(Transient, VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	FDBCharacterEquipItems CharacterEquipStats;
 
@@ -91,6 +92,9 @@ protected:
 	UPROPERTY()
 	class UButton* OKButton;
 
+	UPROPERTY()
+	class UButton* CancelButton;
+
 //Function
 public:
 	void SetSliderSetting(UDBItemObject* ItemObject, int MaxCount);
@@ -98,6 +102,13 @@ public:
 protected:
 	UFUNCTION()
 	void DivideItem();
+
+	UFUNCTION()
+	void CancelDivideItem();
+
+//Input Section
+protected:
+	FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 //Slider Setting
 public:

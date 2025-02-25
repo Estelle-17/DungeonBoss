@@ -133,10 +133,12 @@ FReply UDBInventoryBlockWidget::NativeOnMouseButtonDown(const FGeometry& InGeome
 	if (InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
 	{
 		//만약 Ctrl키도 같이 눌렸다면
-		if (PlayerController->bIsCtrlClicked && ItemObjectData->bIsCountableItem)
+		if (InMouseEvent.IsControlDown() && ItemObjectData->bIsCountableItem)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Divide Item"));
 
+			//SetKeyboardFocus()
+			
 			//Widget위치 변경
 			OnDivideItemSlider.Broadcast(ItemObjectData, ItemObjectData->GetItemCount());
 		}
@@ -217,10 +219,9 @@ void UDBInventoryBlockWidget::NativeOnDragDetected(const FGeometry& InGeometry, 
 			{
 				ItemDragVisualWidget->ItemTexture = ItemObjectData->GetEquipItemData()->GetItemTexture();
 			}
-
+			FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
+			ItemDragVisualWidget->SetItemImage(CurrentImageSize / 0.8f);
 		}
-		FVector2D CurrentImageSize = ItemImage->GetBrush().ImageSize;
-		ItemDragVisualWidget->SetItemImage(CurrentImageSize / 0.8f);
 	}
 	else
 	{
@@ -260,6 +261,7 @@ bool UDBInventoryBlockWidget::NativeOnDrop(const FGeometry& InGeometry, const FD
 		//드래그 시 보여줄 이미지 설정
 		if (ItemDragVisualWidget)
 		{
+			ItemDragVisualWidget->ItemTexture = nullptr;
 			ItemDragVisualWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
