@@ -76,10 +76,10 @@ protected:
 	TObjectPtr<class UDBItemCountScrollBarWidget> DBItemCountScrollBarWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
-	TSubclassOf<class UDBEquipNPCWidget> DBEquipNPCWidgetClass;
+	TSubclassOf<class UDBProductionNPCWidget> DBProductionNPCWidgetClass;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
-	TObjectPtr<class UDBEquipNPCWidget> DBEquipNPCWidget;
+	TObjectPtr<class UDBProductionNPCWidget> DBProductionNPCWidget;
 
 	bool bIsCanMultiUIWidgetOn;
 	bool bIsCanEquipNPCWidgetOn;

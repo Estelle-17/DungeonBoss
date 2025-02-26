@@ -20,8 +20,11 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Mesh)
-	TObjectPtr<class UStaticMeshComponent> Body;
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<class UCapsuleComponent> Capsule;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Mesh)
+	TObjectPtr<class USkeletalMeshComponent> Body;
 
 // Stat Section
 protected:

@@ -19,7 +19,7 @@
 #include "MotionWarpingComponent.h"
 #include "Components/WidgetComponent.h"
 #include "UI/DBHUDWidget.h"
-#include "UI/DBInventoryWidget.h"
+#include "UI/Inventory/DBInventoryWidget.h"
 #include "DBPlayerItemComponent.h"
 #include "DBPlayerController.h"
 
@@ -75,7 +75,7 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 	TargetVector = FVector::Zero();
 
 	//SkeletalMesh
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh> CharacterMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/Prefab/PlayerCharacter.PlayerCharacter'"));
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> CharacterMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/Prefab/Player/PlayerCharacter.PlayerCharacter'"));
 	if (CharacterMeshRef.Object)
 	{
 		GetMesh()->SetSkeletalMesh(CharacterMeshRef.Object);

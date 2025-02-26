@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/DBCharacterInventoryWidget.h"
+#include "UI/Inventory/DBCharacterInventoryWidget.h"
 
 UDBCharacterInventoryWidget::UDBCharacterInventoryWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {

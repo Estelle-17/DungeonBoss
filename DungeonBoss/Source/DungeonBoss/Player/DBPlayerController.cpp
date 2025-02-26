@@ -4,11 +4,11 @@
 #include "Player/DBPlayerController.h"
 #include "DungeonBoss.h"
 #include "UI/DBHUDWidget.h"
-#include "UI/DBInventoryWidget.h"
+#include "UI/Inventory/DBInventoryWidget.h"
 #include "UI/DBMultiUIWidget.h"
-#include "UI/DBItemDragVisualWidget.h"
-#include "UI/DBItemCountScrollBarWidget.h"
-#include "UI/DBEquipNPCWidget.h"
+#include "UI/Inventory/DBItemDragVisualWidget.h"
+#include "UI/Inventory/DBItemCountScrollBarWidget.h"
+#include "UI/ProductionNPC/DBProductionNPCWidget.h"
 #include "EnhancedInputComponent.h"
 
 ADBPlayerController::ADBPlayerController()
@@ -43,12 +43,12 @@ ADBPlayerController::ADBPlayerController()
 		DBItemCountScrollBarWidgetClass = DBItemCountScrollBarWidgetRef.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<UDBEquipNPCWidget> DBEquipNPCWidgetRef(TEXT("/Game/UI/NPC/WBP_EquipNPC.WBP_EquipNPC_C"));
-	if (DBEquipNPCWidgetRef.Class)
+	static ConstructorHelpers::FClassFinder<UDBProductionNPCWidget> DBProductionNPCWidgettRef(TEXT("/Game/UI/NPC/WBP_EquipNPC.WBP_EquipNPC_C"));
+	if (DBProductionNPCWidgettRef.Class)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Check : %s"), *DBEquipNPCWidgetRef.Class->GetName());
+		UE_LOG(LogTemp, Log, TEXT("Check : %s"), *DBProductionNPCWidgettRef.Class->GetName());
 
-		DBEquipNPCWidgetClass = DBEquipNPCWidgetRef.Class;
+		DBProductionNPCWidgetClass = DBProductionNPCWidgettRef.Class;
 	}
 
 	static ConstructorHelpers::FObjectFinder<UInputAction> InventoryRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Inventory.IA_Player_Inventory'");
@@ -147,13 +147,13 @@ void ADBPlayerController::BeginPlay()
 			DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 
-		DBEquipNPCWidget = CreateWidget<UDBEquipNPCWidget>(this, DBEquipNPCWidgetClass);
-		if (DBEquipNPCWidget)
+		DBProductionNPCWidget = CreateWidget<UDBProductionNPCWidget>(this, DBProductionNPCWidgetClass);
+		if (DBProductionNPCWidget)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Check : %s"), *DBEquipNPCWidget->GetFName().ToString()));
-			DBEquipNPCWidget->SetAllMenuUI();
-			DBEquipNPCWidget->AddToViewport();
-			//DBEquipNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Check : %s"), *DBProductionNPCWidget->GetFName().ToString()));
+			DBProductionNPCWidget->SetAllMenuUI();
+			DBProductionNPCWidget->AddToViewport();
+			//DBProductionNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
 
@@ -232,7 +232,7 @@ void ADBPlayerController::CollapseWidget(FString WidgetName)
 	}
 	else if (WidgetName.Equals(TEXT("EquipNPC")))
 	{
-		DBEquipNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
+		DBProductionNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	//모든 UI위젯이 종료되었을 때
@@ -254,7 +254,7 @@ bool ADBPlayerController::CheckWidgetVisible()
 {
 	if (DBInventoryWidget->IsVisible() ||
 		DBMultiUIWidget->IsVisible() ||
-		DBEquipNPCWidget->IsVisible())
+		DBProductionNPCWidget->IsVisible())
 	{
 		return true;
 	}
@@ -300,15 +300,15 @@ void ADBPlayerController::PlayerInteractionAction(const FInputActionValue& Value
 
 		if (bIsCanEquipNPCWidgetOn)
 		{
-			if (DBEquipNPCWidget->IsVisible())
+			if (DBProductionNPCWidget->IsVisible())
 			{
-				DBEquipNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
+				DBProductionNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
 				CollapseWidget(TEXT("EquipNPC"));
 			}
 			else
 			{
-				DBEquipNPCWidget->SetVisibility(ESlateVisibility::Visible);
-				LoadWidget(CastChecked<UUserWidget>(DBEquipNPCWidget));
+				DBProductionNPCWidget->SetVisibility(ESlateVisibility::Visible);
+				LoadWidget(CastChecked<UUserWidget>(DBProductionNPCWidget));
 			}
 		}
 	}

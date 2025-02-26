@@ -5,26 +5,39 @@
 #include "Stat/DBEnemyStatComponent.h"
 #include "DungeonBoss.h"
 #include "Components/WidgetComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "UI/DBHpBarWidget.h"
+#include "Components/SkeletalMeshComponent.h"
 
 // Sets default values
 ADBEnemyBase::ADBEnemyBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
+	Capsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Root"));
+	SetRootComponent(Capsule);
+	
+	Body = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Body"));
+	Body->SetupAttachment(Capsule);
 
-	Body = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Body"));
-
-	RootComponent = Body;
-
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> BodyMeshRef(TEXT("/Script/Engine.StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
-	if (BodyMeshRef.Object)
+	static ConstructorHelpers::FObjectFinder<UCapsuleComponent> CapsuleComponentRef(TEXT("/Script/Engine.StaticMesh'/Engine/BasicShapes/Capsule.Capsule'"));
+	if (CapsuleComponentRef.Object)
 	{
-		Body->SetStaticMesh(BodyMeshRef.Object);
+		Capsule = CapsuleComponentRef.Object;
 	}
 
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> BodyMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/Prefab/Boss/Boss.Boss'"));
+	if (BodyMeshRef.Object)
+	{
+		Body->SetSkeletalMesh(BodyMeshRef.Object);
+	}
+
+	Capsule->SetCapsuleHalfHeight(0);
+	Capsule->SetCapsuleRadius(0);
+
 	Body->SetGenerateOverlapEvents(true);
-	Body->SetRelativeScale3D(FVector3d(2.0f, 2.0f, 2.0f));
+	Body->SetRelativeScale3D(FVector(1.5f, 1.5f, 1.5f));
 	Tags.Add(FName("Enemy"));
 
 	//Stat Section

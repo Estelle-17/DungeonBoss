@@ -5,41 +5,41 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "GameData/DBMakeItemMenuTable.h"
-#include "DBEquipNPCWidget.generated.h"
+#include "DBProductionNPCWidget.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class DUNGEONBOSS_API UDBEquipNPCWidget : public UUserWidget
+class DUNGEONBOSS_API UDBProductionNPCWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
+
 public:
-	UDBEquipNPCWidget(const FObjectInitializer& ObjectInitializer);
+	UDBProductionNPCWidget(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	virtual void NativeConstruct() override;
 
-//Widgets
-//Variables
+	//Widgets
+	//Variables
 protected:
 	UPROPERTY()
 	class UTreeView* ItemTreeView;
 
-//Functions
+	//Functions
 protected:
 	void AddItemMenu(FDBMakeItemMenuTable* NewMenuTable);
 	int CheckContainMenu(FName NewMenuID);
 
-//DataTable
-//Variables
+	//DataTable
+	//Variables
 protected:
 	class UDataTable* MakeItemMenuTable;
 
 	TArray<FDBMakeItemMenuTable*> MakeItemMenuItems;
 
-//Functions
+	//Functions
 public:
 	void SetAllMenuUI();
 };

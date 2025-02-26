@@ -1,24 +1,31 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/DBEquipNPCWidget.h"
+#include "UI/ProductionNPC/DBProductionNPCWidget.h"
 #include "Components/TreeView.h"
 #include "GameData/NeedForMakeItemData/DBMakeItemsData.h"
 #include "GameData/DBItemSingleton.h"
 
-UDBEquipNPCWidget::UDBEquipNPCWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+UDBProductionNPCWidget::UDBProductionNPCWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 }
 
-void UDBEquipNPCWidget::NativeConstruct()
+void UDBProductionNPCWidget::NativeConstruct()
 {
+	//각 인벤토리의 칸을 TArray에 저장 및 초기화
+	for (int index = 0; index < 6; index++)
+	{
+		FName InventoryBlockName = *FString::Printf(TEXT("NeedMaterialForItemBlock_%d"), index);
+
+	}
+
 	//Widget Setting
 	ItemTreeView = Cast<UTreeView>(GetWidgetFromName(TEXT("ItemTreeView")));
 	ensure(ItemTreeView);
 	ItemTreeView->SetScrollbarVisibility(ESlateVisibility::Hidden);
 }
 
-void UDBEquipNPCWidget::AddItemMenu(FDBMakeItemMenuTable* NewMenuTable)
+void UDBProductionNPCWidget::AddItemMenu(FDBMakeItemMenuTable* NewMenuTable)
 {
 	UDBMakeItemsData* ItemData = NewObject<UDBMakeItemsData>(this, UDBMakeItemsData::StaticClass());
 	ItemData->SetItemData(NewMenuTable);
@@ -33,7 +40,7 @@ void UDBEquipNPCWidget::AddItemMenu(FDBMakeItemMenuTable* NewMenuTable)
 
 			UE_LOG(LogTemp, Log, TEXT("Check %s : %s\nAddMenuChild : %s"), *RootItemData->GetMenuID().ToString(), *ItemData->GetMenuID().ToString(), *ItemData->GetMenuName().ToString())
 
-			RootItemData->ChildrenItems.Add(ItemData);
+				RootItemData->ChildrenItems.Add(ItemData);
 			ItemTreeView->SetOnGetItemChildren<UDBMakeItemsData>(RootItemData, &UDBMakeItemsData::OnGetItemChildren);
 		}
 	}
@@ -44,7 +51,7 @@ void UDBEquipNPCWidget::AddItemMenu(FDBMakeItemMenuTable* NewMenuTable)
 	}
 }
 
-int UDBEquipNPCWidget::CheckContainMenu(FName NewMenuID)
+int UDBProductionNPCWidget::CheckContainMenu(FName NewMenuID)
 {
 	TArray<UObject*> ItemDataArray = ItemTreeView->GetListItems();
 
@@ -58,7 +65,7 @@ int UDBEquipNPCWidget::CheckContainMenu(FName NewMenuID)
 	return -1;
 }
 
-void UDBEquipNPCWidget::SetAllMenuUI()
+void UDBProductionNPCWidget::SetAllMenuUI()
 {
 	MakeItemMenuItems = UDBItemSingleton::Get().GetLoadMakeItemMenuTableData();
 

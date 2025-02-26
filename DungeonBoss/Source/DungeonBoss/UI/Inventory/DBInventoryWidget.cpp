@@ -1,13 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "UI/DBInventoryWidget.h"
+#include "UI/Inventory/DBInventoryWidget.h"
 #include "Components/TileView.h"
 #include "Components/Button.h"
 #include "Components/Image.h"
 #include "Components/Slider.h"
 #include "Components/TextBlock.h"
 #include "Components/CanvasPanel.h"
-#include "UI/DBInventoryBlockWidget.h"
+#include "UI/Inventory/DBInventoryBlockWidget.h"
 #include "Interface/DBCharacterHUDInterface.h"
 #include "GameData/DBItemSingleton.h"
 #include "Item/DBItemObject.h"

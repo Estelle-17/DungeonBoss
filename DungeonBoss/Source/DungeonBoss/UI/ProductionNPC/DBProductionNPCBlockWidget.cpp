@@ -1,16 +1,16 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/DBEquipNPCListBlockWidget.h"
+#include "UI/ProductionNPC/DBProductionNPCBlockWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/CanvasPanel.h"
 #include "GameData/NeedForMakeItemData/DBMakeItemsData.h"
 
-UDBEquipNPCListBlockWidget::UDBEquipNPCListBlockWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+UDBProductionNPCBlockWidget::UDBProductionNPCBlockWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 }
 
-void UDBEquipNPCListBlockWidget::NativeConstruct()
+void UDBProductionNPCBlockWidget::NativeConstruct()
 {
 	ItemNameText = Cast<UTextBlock>(GetWidgetFromName(TEXT("ItemNameText")));
 	ensure(ItemNameText);
@@ -19,7 +19,7 @@ void UDBEquipNPCListBlockWidget::NativeConstruct()
 	ensure(MenuPanel);
 }
 
-void UDBEquipNPCListBlockWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
+void UDBProductionNPCBlockWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	UDBMakeItemsData* ItemData = Cast<UDBMakeItemsData>(ListItemObject);
 
@@ -38,7 +38,7 @@ void UDBEquipNPCListBlockWidget::NativeOnListItemObjectSet(UObject* ListItemObje
 	}
 }
 
-void UDBEquipNPCListBlockWidget::NativeOnItemSelectionChanged(bool bIsSelected)
+void UDBProductionNPCBlockWidget::NativeOnItemSelectionChanged(bool bIsSelected)
 {
 
 }

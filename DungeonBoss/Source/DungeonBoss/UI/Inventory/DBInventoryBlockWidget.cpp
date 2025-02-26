@@ -1,14 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "UI/DBInventoryBlockWidget.h"
+#include "UI/Inventory/DBInventoryBlockWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "Components/CanvasPanel.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Item/ItemDragDropOperation.h"
 #include "Player/DBPlayerController.h"
-#include "UI/DBItemDragVisualWidget.h"
-#include "UI/DBItemCountScrollBarWidget.h"
+#include "UI/Inventory/DBItemDragVisualWidget.h"
+#include "UI/Inventory/DBItemCountScrollBarWidget.h"
 
 UDBInventoryBlockWidget::UDBInventoryBlockWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
