@@ -1,12 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "GameData/DBItemSingleton.h"
+#include "GameData/DBMaterialItemStat.h"
 
 DEFINE_LOG_CATEGORY(LogDBItemSingleton);
 
 UDBItemSingleton::UDBItemSingleton()
 {
+	//게임에 필요한 데이터들 불러오기
 	static ConstructorHelpers::FObjectFinder<UDataTable> EquipItemDataTableRef(TEXT("/Script/Engine.DataTable'/Game/GameData/DBItemStatTable.DBItemStatTable'"));
 	if (nullptr != EquipItemDataTableRef.Object)
 	{
@@ -19,6 +20,13 @@ UDBItemSingleton::UDBItemSingleton()
 	{
 		CountableItemDataTable = CountableItemDataTableRef.Object;
 		check(CountableItemDataTable->GetRowMap().Num() > 0);
+
+		TArray<FDBMaterialItemStat*> MaterialItemStatArray;
+		CountableItemDataTable->GetAllRows<FDBMaterialItemStat>(TEXT(""), MaterialItemStatArray);
+		for (FDBMaterialItemStat* MaterialItemStat : MaterialItemStatArray)
+		{
+			CountableItems.Emplace(MaterialItemStat->ItemID, 0);
+		}
 	}
 
 	static ConstructorHelpers::FObjectFinder<UDataTable> MakeItemMenuTableRef(TEXT("/Script/Engine.DataTable'/Game/GameData/DBMakeItemMenuTable.DBMakeItemMenuTable'"));
@@ -28,6 +36,13 @@ UDBItemSingleton::UDBItemSingleton()
 		check(MakeItemMenuTable->GetRowMap().Num() > 0);
 
 		MakeItemMenuTable->GetAllRows<FDBMakeItemMenuTable>(TEXT("GetAllRows : MakeItemMenuItems"), MakeItemMenuItems);
+	}
+
+	static ConstructorHelpers::FObjectFinder<UDataTable> MaterialForMakeItemTableRef(TEXT("/Script/Engine.DataTable'/Game/GameData/DBMaterialForMakeItem.DBMaterialForMakeItem'"));
+	if (nullptr != MaterialForMakeItemTableRef.Object)
+	{
+		MaterialForMakeItemTable = MaterialForMakeItemTableRef.Object;
+		check(MaterialForMakeItemTable->GetRowMap().Num() > 0);
 	}
 }
 
@@ -44,17 +59,13 @@ UDBItemSingleton& UDBItemSingleton::Get()
 	return *NewObject<UDBItemSingleton>();
 }
 
-void UDBItemSingleton::AddEquipItem(FName ItemID, UDBItemObject* ItemObject)
+void UDBItemSingleton::SetCountableItemObject(FName ItemID, int ItemCount)
 {
-	EquipItems.Emplace(ItemObject);
-}
-
-void UDBItemSingleton::RemoveEquipItem(UDBItemObject* ItemObject)
-{
-	EquipItems.Remove(ItemObject);
-}
-
-void UDBItemSingleton::AddCountableItem(FName ItemID, UDBItemObject* ItemObject)
-{
-	CountableItems.Emplace(ItemID, ItemObject);
+	int* CurrentItemCount = CountableItems.Find(ItemID);
+	int NewItemCount = ItemCount + *CurrentItemCount;
+	if (CurrentItemCount)
+	{
+		UE_LOG(LogTemp, Log, TEXT("CountableItem : %d"), NewItemCount);
+		CountableItems.Emplace(ItemID, NewItemCount);
+	}
 }

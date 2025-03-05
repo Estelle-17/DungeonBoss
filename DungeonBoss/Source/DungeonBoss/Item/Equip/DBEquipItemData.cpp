@@ -18,7 +18,7 @@ void UDBEquipItemData::SetEquipStat(FName ItemID)
 	Item.MaxHp = DataTable->MaxHp;
 	Item.Attack = DataTable->Attack;
 	Item.Defense = DataTable->Defense;
-	Item.MovementSpeed = DataTable->MovementSpeed;
+	Item.MoveSpeed = DataTable->MoveSpeed;
 	Item.TexturePath = DataTable->TexturePath;
 
 	ItemTexture = LoadObject<UTexture2D>(nullptr, *Item.TexturePath);
@@ -51,7 +51,7 @@ void UDBEquipItemData::SetEquipCharacterStat()
 	CharacterStat.MaxHp = ItemStat.MaxHp;
 	CharacterStat.Attack = ItemStat.Attack;
 	CharacterStat.Defense = ItemStat.Defense;
-	CharacterStat.MovementSpeed = ItemStat.MovementSpeed;
+	CharacterStat.MoveSpeed = ItemStat.MoveSpeed;
 
 	SetCharacterStat(CharacterStat);
 }

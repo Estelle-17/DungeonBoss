@@ -25,7 +25,7 @@ void UDBCharacterStatComponent::InitializeComponent()
 	FDBCharacterStat CharacterStat;
 	CharacterStat.MaxHp = 100.0f;
 	CharacterStat.Attack = 10.0f;
-	CharacterStat.MovementSpeed = 1.0f;
+	CharacterStat.MoveSpeed = 1.0f;
 
 	SetBaseStat(CharacterStat);
 	SetHp(BaseStat.MaxHp);

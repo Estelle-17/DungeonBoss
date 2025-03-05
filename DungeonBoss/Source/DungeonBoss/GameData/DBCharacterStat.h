@@ -10,7 +10,7 @@ struct FDBCharacterStat : public FTableRowBase
 	GENERATED_BODY()
 
 public:
-	FDBCharacterStat() : MaxHp(0.0f), Attack(0.0f), Defense(0.0f), MovementSpeed(0.0f) {}
+	FDBCharacterStat() : MaxHp(0.0f), Attack(0.0f), Defense(0.0f), MoveSpeed(0.0f) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
 	float MaxHp;
@@ -22,7 +22,7 @@ public:
 	float Defense;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
-	float MovementSpeed;
+	float MoveSpeed;
 
 	FDBCharacterStat operator+(const FDBCharacterStat& Other) const
 	{

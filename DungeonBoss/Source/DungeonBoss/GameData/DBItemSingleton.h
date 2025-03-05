@@ -9,6 +9,7 @@
 #include "Item/DBItemObject.h"
 #include "Item/DBCountableItemData.h"
 #include "GameData/DBMakeItemMenuTable.h"
+#include "GameData/DBMaterialForMakeItemTable.h"
 #include "DBItemSingleton.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogDBItemSingleton, Error, All);
@@ -26,32 +27,29 @@ public:
 	static UDBItemSingleton& Get();
 
 public:
-	void AddEquipItem(FName ItemID, UDBItemObject* ItemObject);
-	void RemoveEquipItem(UDBItemObject* ItemObject);
-	void AddCountableItem(FName ItemID, UDBItemObject* ItemObject);
-
 //EquipItemData
 	FORCEINLINE FDBItemStat* GetLoadEquipItemData(FName ItemID) { return EquipItemDataTable->FindRow<FDBItemStat>(ItemID, TEXT("")); }
-	FORCEINLINE const TArray<UDBItemObject*> GetEquipItemObjects() { return EquipItems; }
 //CountableItemData
 	FORCEINLINE FDBMaterialItemStat* GetLoadCountableItemData(FName ItemID) { return CountableItemDataTable->FindRow<FDBMaterialItemStat>(ItemID, TEXT("")); }
-	FORCEINLINE UDBItemObject* GetCountableItemObject(FName ItemID) { return CountableItems[ItemID]; }
+	FORCEINLINE int GetCountableItemCount(FName ItemID) { return CountableItems[ItemID]; }
+	void SetCountableItemObject(FName ItemID, int ItemCount);
 	FORCEINLINE bool IsContainCountableItem(FName ItemID) { return CountableItems.Contains(ItemID); }
-
+//MakeItemMenuTable
 	FORCEINLINE TArray<FDBMakeItemMenuTable*> GetLoadMakeItemMenuTableData() { return MakeItemMenuItems; }
+//MaterialForMakeItemTable
+	FORCEINLINE FDBMaterialForMakeItemTable* GetLoadDBMaterialForMakeItemTableData(FName ItemID) { return MaterialForMakeItemTable->FindRow<FDBMaterialForMakeItemTable>(ItemID, TEXT("")); }
 
 private:
 	class UDataTable* EquipItemDataTable;
 
-	UPROPERTY(EditAnywhere)
-	TArray<UDBItemObject*> EquipItems;
 
 	class UDataTable* CountableItemDataTable;
 
 	UPROPERTY(EditAnywhere)
-	TMap<FName, UDBItemObject*> CountableItems;
+	TMap<FName, int32> CountableItems;
 
 	class UDataTable* MakeItemMenuTable;
-
 	TArray<FDBMakeItemMenuTable*> MakeItemMenuItems;
+
+	class UDataTable* MaterialForMakeItemTable;
 };

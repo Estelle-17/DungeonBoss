@@ -42,6 +42,7 @@ public:
 	void MoveEquipItemToEmptySlot(UDBItemObject* ItemObject, int ItemSlotNumber);
 	int CheckEmptyItemSlot();
 	int FindCountableItem(FName NewItemID);
+	void RemoveCountableItem(FName TargetItemID, int ItemCount);
 	//캐릭터 스탯 관련 함수
 	void SetCharacterItemStat(FDBCharacterStat NewEquipStat, int32 ItemType);
 	void SettingCharacterEquipStats(UDBItemObject* ItemObject, int ItemSlotNumber);

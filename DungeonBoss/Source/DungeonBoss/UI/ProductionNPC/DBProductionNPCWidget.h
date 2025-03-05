@@ -21,25 +21,40 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 
-	//Widgets
-	//Variables
+//Widgets
+//Variables
 protected:
 	UPROPERTY()
 	class UTreeView* ItemTreeView;
 
-	//Functions
+	UPROPERTY()
+	class UButton* MakeItemButton;
+
+	TArray<class UDBNeedMaterialForItemWidget*> MaterialForItemBlocks;
+
+//Functions
+public:
+	void SettingMaterialForItemBlock(FName NewEquipItemID, FName NewItemID, int NeedItemCount, int ItemNumber);
+
+	UFUNCTION()
+	void MakeItem();
+
 protected:
 	void AddItemMenu(FDBMakeItemMenuTable* NewMenuTable);
 	int CheckContainMenu(FName NewMenuID);
 
-	//DataTable
-	//Variables
+//ItemsData
+//Variables
 protected:
-	class UDataTable* MakeItemMenuTable;
+	FName CurrentEquipItemIDOfSelectMenu;
 
-	TArray<FDBMakeItemMenuTable*> MakeItemMenuItems;
-
-	//Functions
+//Inventory
+//Variables
+public:
+	class UDBInventoryWidget* InventoryWidget;
+//DataTable
+//Functions
 public:
 	void SetAllMenuUI();
+	void DisableAllMenuUI();
 };

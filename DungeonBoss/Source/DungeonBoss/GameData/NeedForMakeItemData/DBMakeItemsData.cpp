@@ -17,6 +17,7 @@ void UDBMakeItemsData::SetItemData(FDBMakeItemMenuTable* NewMenuTable)
 {
 	MenuName = NewMenuTable->Name;
 	MenuID = NewMenuTable->MenuID;
+	ItemID = NewMenuTable->ItemID;
 	bIsChild = NewMenuTable->IsChild;
 	SpacingSize = NewMenuTable->IsChild ? 50 : 0;
 }

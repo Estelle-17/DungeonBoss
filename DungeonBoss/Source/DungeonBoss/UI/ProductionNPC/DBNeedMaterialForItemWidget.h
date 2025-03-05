@@ -30,8 +30,18 @@ protected:
 	class UImage* ItemImage;
 
 public:
-	void SetBlockSetting(UTexture2D* NewItemTexture, int CurrenItemCount, int NeedItemCount);
+	void SetBlockSetting(FName NewItemID, int NewCurrentItemCount, int NewNeedItemCount);
 
-	UFUNCTION()
-	void MakeItem(FName ItemID);
+//Item
+//Variables
+public:
+	int NeedItemCount;
+protected:
+	FName ItemID;
+
+	int CurrentItemCount;
+//Functions
+public:
+	FORCEINLINE const FName GetItemID() { return ItemID; }
+	bool CheckCanCreateItem();
 };

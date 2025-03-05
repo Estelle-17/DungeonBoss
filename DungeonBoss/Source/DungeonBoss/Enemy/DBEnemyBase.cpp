@@ -21,6 +21,16 @@ ADBEnemyBase::ADBEnemyBase()
 	Body = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Body"));
 	Body->SetupAttachment(Capsule);
 
+	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Weapon"));
+	WeaponMesh->SetupAttachment(Body, TEXT("Bip001-R-Hand"));
+	WeaponMesh->SetRelativeLocation(FVector3d(10.0f, 0.0f, -4.0f));
+	WeaponMesh->SetRelativeRotation(FRotator(-90.0f, 0.0f, -90.0f));
+
+	ShieldMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Shield"));
+	ShieldMesh->SetupAttachment(Body, TEXT("Bip001-L-Hand"));
+	ShieldMesh->SetRelativeLocation(FVector3d(12.0f, -1.0f, -2.0f));
+	ShieldMesh->SetRelativeRotation(FRotator(90.0f, 0.0f, 90.0f));
+
 	static ConstructorHelpers::FObjectFinder<UCapsuleComponent> CapsuleComponentRef(TEXT("/Script/Engine.StaticMesh'/Engine/BasicShapes/Capsule.Capsule'"));
 	if (CapsuleComponentRef.Object)
 	{
@@ -31,6 +41,18 @@ ADBEnemyBase::ADBEnemyBase()
 	if (BodyMeshRef.Object)
 	{
 		Body->SetSkeletalMesh(BodyMeshRef.Object);
+	}
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> WeaponMeshRef(TEXT("/Script/Engine.StaticMesh'/Game/Prefab/Boss/BossSword.BossSword'"));
+	if (WeaponMeshRef.Object)
+	{
+		WeaponMesh->SetStaticMesh(WeaponMeshRef.Object);
+	}
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> ShieldMeshRef(TEXT("/Script/Engine.StaticMesh'/Game/Prefab/Boss/BossShield.BossShield'"));
+	if (ShieldMeshRef.Object)
+	{
+		ShieldMesh->SetStaticMesh(ShieldMeshRef.Object);
 	}
 
 	Capsule->SetCapsuleHalfHeight(0);

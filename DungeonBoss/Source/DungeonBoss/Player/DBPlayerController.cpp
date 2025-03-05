@@ -152,6 +152,7 @@ void ADBPlayerController::BeginPlay()
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Check : %s"), *DBProductionNPCWidget->GetFName().ToString()));
 			DBProductionNPCWidget->SetAllMenuUI();
+			DBProductionNPCWidget->InventoryWidget = DBInventoryWidget;
 			DBProductionNPCWidget->AddToViewport();
 			//DBProductionNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}

@@ -128,9 +128,9 @@ void UDBInventoryWidget::NativeConstruct()
 	AddEquipItem(TEXT("SHOES_001"));
 	AddEquipItem(TEXT("SHOES_001"));
 	AddEquipItem(TEXT("SHOES_001"));
-	AddCountableItem(TEXT("BOSS_01_01"), 10, true);
-	AddCountableItem(TEXT("BOSS_01_01"), 5, true);
-	AddCountableItem(TEXT("BOSS_01_02"), 5, true);
+	AddCountableItem(TEXT("ARMORED_BOSS_01"), 10, true);
+	AddCountableItem(TEXT("ARMORED_BOSS_01"), 5, true);
+	AddCountableItem(TEXT("ARMORED_BOSS_02"), 5, true);
 
 }
 
@@ -181,6 +181,8 @@ void UDBInventoryWidget::AddCountableItem(FName ItemID, int ItemCount, bool bIsI
 			ItemSlots[CanInputItemSlotIndex]->ItemSlotType = EItemSlotType::Item;
 		}
 	}
+	//아이템 갯수 저장
+	UDBItemSingleton::Get().SetCountableItemObject(ItemID, ItemCount);
 }
 
 void UDBInventoryWidget::SettingEquipItemForPlayer(UDBItemObject* ItemObject, int FromSlotNumber, EEquipItemType FromEquipItemType, EItemSlotType FromItemSlotType)
@@ -478,6 +480,45 @@ int UDBInventoryWidget::FindCountableItem(FName NewItemID)
 	}
 
 	return -1;
+}
+
+void UDBInventoryWidget::RemoveCountableItem(FName TargetItemID, int ItemCount)
+{
+	int CurrentItemCount = ItemCount;
+	for (int index = 0; index < 80; index++)
+	{
+		UDBItemObject* ItemObject = ItemSlots[index]->GetItemObjectData();
+		if (ItemObject)
+		{
+			//재료의 ID값이 같은지 확인
+			if (ItemObject->ItemID == TargetItemID)
+			{
+				//아이템의 수량이 제거해야할 수량과 같거나 적은 경우
+				if (ItemObject->GetItemCount() <= CurrentItemCount)
+				{
+					//아이템 제거 및 제거해야할 수량 감소
+					CurrentItemCount -= ItemObject->GetItemCount();
+					UDBItemSingleton::Get().SetCountableItemObject(TargetItemID, -ItemObject->GetItemCount());
+
+					//가비지 컬렉터에 UDBItemObject데이터 등록
+					ItemSlots[index]->GetItemObjectData()->MarkAsGarbage();
+					ItemSlots[index]->ResetInventorySlot();
+				}
+				else
+				{
+					//아이템 수량 감소
+					ItemObject->SetItemCount(-CurrentItemCount);
+					UDBItemSingleton::Get().SetCountableItemObject(TargetItemID, -CurrentItemCount);
+
+					return;
+				}
+			}
+		}
+		if (CurrentItemCount <= 0)
+		{
+			return;
+		}
+	}
 }
 
 void UDBInventoryWidget::SettingCharacterEquipStats(UDBItemObject* ItemObject, int ItemSlotNumber)

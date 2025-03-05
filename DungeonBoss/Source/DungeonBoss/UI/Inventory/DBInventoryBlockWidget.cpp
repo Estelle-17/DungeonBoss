@@ -52,6 +52,8 @@ void UDBInventoryBlockWidget::SetItemSetting(UObject* ItemObject)
 		return;
 	}
 
+	//UE_LOG(LogTemp, Log, TEXT("Success InventoryBlock In ItemObjectData!"));
+
 	if (ItemObjectData->bIsCountableItem)
 	{
 		SetCountableItemSetting();

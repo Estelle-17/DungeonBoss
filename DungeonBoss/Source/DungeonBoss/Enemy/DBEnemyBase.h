@@ -26,6 +26,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Mesh)
 	TObjectPtr<class USkeletalMeshComponent> Body;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UStaticMeshComponent> WeaponMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UStaticMeshComponent> ShieldMesh;
+
 // Stat Section
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))

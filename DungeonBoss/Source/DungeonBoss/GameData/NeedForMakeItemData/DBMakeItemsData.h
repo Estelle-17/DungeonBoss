@@ -7,6 +7,9 @@
 #include "GameData/DBMakeItemMenuTable.h"
 #include "DBMakeItemsData.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_FourParams(FOnMaterialForItemBlockSetting, FName /*NewEquipItemID*/, FName /*NewItemID*/, int /*NeedItemCount*/, int /*ItemNumber*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCheckMakeItem, FName /*NewItemID*/);
+DECLARE_MULTICAST_DELEGATE(FOnDisableAllMenuUI);
 /**
  * 
  */
@@ -20,6 +23,10 @@ protected:
 	
 public:
 	void OnGetItemChildren(UObject* pItem, TArray<UObject*> &aChildren);
+
+	FOnMaterialForItemBlockSetting OnMaterialForItemBlockSetting;
+	FOnCheckMakeItem OnCheckMakeItem;
+	FOnDisableAllMenuUI OnDisableAllMenuUI;
 
 //ItemData
 //Variables
@@ -36,12 +43,16 @@ protected:
 	FName MenuID;
 
 	UPROPERTY()
+	FName ItemID;
+
+	UPROPERTY()
 	int SpacingSize;
 
 //Functions
 public:
 	FORCEINLINE FName GetMenuName() { return MenuName; }
 	FORCEINLINE FName GetMenuID() { return MenuID; }
+	FORCEINLINE FName GetItemID() { return ItemID; }
 	FORCEINLINE int GetSpacingSize() { return SpacingSize; }
 
 	void SetItemData(FDBMakeItemMenuTable* NewMenuTable);
