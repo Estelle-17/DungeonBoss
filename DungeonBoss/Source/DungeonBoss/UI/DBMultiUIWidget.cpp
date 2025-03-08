@@ -12,6 +12,7 @@
 #include "SocketSubsystem.h"
 #include "Interfaces/IPv4/IPv4Address.h"
 #include "Player/DBPlayerController.h"
+#include "Props/DBNPCBaseActor.h"
 
 UDBMultiUIWidget::UDBMultiUIWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -109,12 +110,7 @@ FReply UDBMultiUIWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKey
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Collapse Inventory"));
 
-		ADBPlayerController* PlayerController = Cast<ADBPlayerController>(GetWorld()->GetFirstPlayerController());
-		//PlayerContorller에서 ItemDragVisualWidget가져오기
-		if (PlayerController)
-		{
-			PlayerController->CollapseWidget(TEXT("MultiUI"));
-		}
+		NPCBaseActor->PlayerInteractionAction();
 	}
 
 	return Reply.NativeReply;

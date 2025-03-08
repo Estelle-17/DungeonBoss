@@ -21,6 +21,10 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 
+//Variables
+public:
+	class ADBNPCBaseActor* NPCBaseActor;
+
 //Widgets
 //Variables
 protected:
@@ -57,4 +61,8 @@ public:
 public:
 	void SetAllMenuUI();
 	void DisableAllMenuUI();
+
+//Input Section
+protected:
+	FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 };

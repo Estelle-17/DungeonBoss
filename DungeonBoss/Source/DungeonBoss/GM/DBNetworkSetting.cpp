@@ -38,6 +38,17 @@ void ADBNetworkSetting::CreateRoomSection()
 	UWorld* World = GetWorld();
 	if (World)
 	{
+		APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
+		if (PlayerController)
+		{
+			//서버에 접속 시 모든 UI가 제거되므로 InputMode변경
+			FInputModeGameOnly InputModeData;
+			//PlayerController에 적용
+			PlayerController->SetInputMode(InputModeData);
+			//마우스커서 On/Off
+			PlayerController->bShowMouseCursor = false;
+		}
+
 		World->ServerTravel("/Game/Maps/Map1?listen");
 	}
 
@@ -131,6 +142,13 @@ void ADBNetworkSetting::FindRoomSection(FString Address)
 		APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
 		if (PlayerController)
 		{
+			//서버에 접속 시 모든 UI가 제거되므로 InputMode변경
+			FInputModeGameOnly InputModeData;
+			//PlayerController에 적용
+			PlayerController->SetInputMode(InputModeData);
+			//마우스커서 On/Off
+			PlayerController->bShowMouseCursor = false;
+
 			PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 		}
 	}
@@ -245,6 +263,13 @@ void ADBNetworkSetting::OnJoinSessionComplete(FName SessionName, EOnJoinSessionC
 		APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
 		if (PlayerController)
 		{
+			//서버에 접속 시 모든 UI가 제거되므로 InputMode변경
+			FInputModeGameOnly InputModeData;
+			//PlayerController에 적용
+			PlayerController->SetInputMode(InputModeData);
+			//마우스커서 On/Off
+			PlayerController->bShowMouseCursor = false;
+
 			PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 		}
 	}

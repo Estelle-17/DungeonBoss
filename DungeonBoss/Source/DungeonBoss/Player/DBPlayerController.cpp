@@ -31,24 +31,10 @@ ADBPlayerController::ADBPlayerController()
 		DBItemDragVisualWidgetClass = DBItemDragVisualWidgetRef.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<UDBMultiUIWidget> DBMultiUIWidgetRef(TEXT("/Game/UI/WBP_DBMultiUI.WBP_DBMultiUI_C"));
-	if (DBMultiUIWidgetRef.Class)
-	{
-		DBMultiUIWidgetClass = DBMultiUIWidgetRef.Class;
-	}
-
 	static ConstructorHelpers::FClassFinder<UDBItemCountScrollBarWidget> DBItemCountScrollBarWidgetRef(TEXT("/Game/UI/Item/WBP_ItemCountScrollBar.WBP_ItemCountScrollBar_C"));
 	if (DBItemCountScrollBarWidgetRef.Class)
 	{
 		DBItemCountScrollBarWidgetClass = DBItemCountScrollBarWidgetRef.Class;
-	}
-
-	static ConstructorHelpers::FClassFinder<UDBProductionNPCWidget> DBProductionNPCWidgettRef(TEXT("/Game/UI/NPC/WBP_EquipNPC.WBP_EquipNPC_C"));
-	if (DBProductionNPCWidgettRef.Class)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Check : %s"), *DBProductionNPCWidgettRef.Class->GetName());
-
-		DBProductionNPCWidgetClass = DBProductionNPCWidgettRef.Class;
 	}
 
 	static ConstructorHelpers::FObjectFinder<UInputAction> InventoryRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Inventory.IA_Player_Inventory'");
@@ -72,7 +58,6 @@ ADBPlayerController::ADBPlayerController()
 	NetworkSetting = CreateDefaultSubobject<ADBNetworkSetting>(TEXT("NetworkSetting"));
 
 	bIsCanMultiUIWidgetOn = false;
-	bIsCanEquipNPCWidgetOn = true;
 	bIsRecentlyWidgetCollapsed = false;
 }
 
@@ -137,25 +122,6 @@ void ADBPlayerController::BeginPlay()
 			DBItemDragVisualWidget->AddToViewport();
 			DBItemDragVisualWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
-
-		DBMultiUIWidget = CreateWidget<UDBMultiUIWidget>(this, DBMultiUIWidgetClass);
-		if (DBMultiUIWidget)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("DBMultiUIWidget ON"));
-			DBMultiUIWidget->AddToViewport();
-			DBMultiUIWidget->BindingButtons(NetworkSetting);
-			DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
-		}
-
-		DBProductionNPCWidget = CreateWidget<UDBProductionNPCWidget>(this, DBProductionNPCWidgetClass);
-		if (DBProductionNPCWidget)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, FString::Printf(TEXT("Check : %s"), *DBProductionNPCWidget->GetFName().ToString()));
-			DBProductionNPCWidget->SetAllMenuUI();
-			DBProductionNPCWidget->InventoryWidget = DBInventoryWidget;
-			DBProductionNPCWidget->AddToViewport();
-			//DBProductionNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
-		}
 	}
 
 	DB_LOG(LogDBNetwork, Log, TEXT("%s"), TEXT("End"));
@@ -177,19 +143,6 @@ void ADBPlayerController::SetupInputComponent()
 	UEnhancedInputComponent* enhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent);
 
 	enhancedInputComponent->BindAction(InventoryAction, ETriggerEvent::Triggered, this, &ADBPlayerController::PlayerInventoryAction);
-	enhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &ADBPlayerController::PlayerInteractionAction);
-}
-
-void ADBPlayerController::SetMultiUIWidgetDisable()
-{
-	bIsCanMultiUIWidgetOn = false;
-	
-	//범위를 넘어서면 자동으로 UI닫기
-	if (DBMultiUIWidget)
-	{
-		DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
-		CollapseWidget(TEXT("MultiUI"));
-	}
 }
 
 void ADBPlayerController::SetNextTickEnableCanWidgetCollapsed()
@@ -227,14 +180,6 @@ void ADBPlayerController::CollapseWidget(FString WidgetName)
 	{
 		DBInventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
-	else if (WidgetName.Equals(TEXT("MultiUI")))
-	{
-		DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
-	}
-	else if (WidgetName.Equals(TEXT("EquipNPC")))
-	{
-		DBProductionNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
-	}
 
 	//모든 UI위젯이 종료되었을 때
 	if (!CheckWidgetVisible())
@@ -253,9 +198,7 @@ void ADBPlayerController::CollapseWidget(FString WidgetName)
 
 bool ADBPlayerController::CheckWidgetVisible()
 {
-	if (DBInventoryWidget->IsVisible() ||
-		DBMultiUIWidget->IsVisible() ||
-		DBProductionNPCWidget->IsVisible())
+	if (DBInventoryWidget->IsVisible())
 	{
 		return true;
 	}
@@ -281,38 +224,5 @@ void ADBPlayerController::PlayerInventoryAction(const FInputActionValue& Value)
 	}
 }
 
-void ADBPlayerController::PlayerInteractionAction(const FInputActionValue& Value)
-{
-	if (!bIsRecentlyWidgetCollapsed)
-	{
-		if (bIsCanMultiUIWidgetOn)
-		{
-			if (DBMultiUIWidget->IsVisible())
-			{
-				DBMultiUIWidget->SetVisibility(ESlateVisibility::Collapsed);
-				CollapseWidget(TEXT("MultiUI"));
-			}
-			else
-			{
-				DBMultiUIWidget->SetVisibility(ESlateVisibility::Visible);
-				LoadWidget(CastChecked<UUserWidget>(DBMultiUIWidget));
-			}
-		}
-
-		if (bIsCanEquipNPCWidgetOn)
-		{
-			if (DBProductionNPCWidget->IsVisible())
-			{
-				DBProductionNPCWidget->SetVisibility(ESlateVisibility::Collapsed);
-				CollapseWidget(TEXT("EquipNPC"));
-			}
-			else
-			{
-				DBProductionNPCWidget->SetVisibility(ESlateVisibility::Visible);
-				LoadWidget(CastChecked<UUserWidget>(DBProductionNPCWidget));
-			}
-		}
-	}
-}
 
 

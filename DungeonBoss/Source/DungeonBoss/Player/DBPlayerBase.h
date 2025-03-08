@@ -93,6 +93,11 @@ protected:
 public:
 	uint8 bCanAnimationOut = 0;
 
+//NPC Interaction Section
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = InteractionBetweenPlayerAndNPC)
+	TObjectPtr<class UDBInteractionBetweenPlayerAndNPC> DBInteractionBetweenPlayerAndNPC;
+
 //Collider Section
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collision, Meta = (AllowPrivateAccess = "true"))
@@ -101,12 +106,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Mesh)
 	TObjectPtr<class USphereComponent> SearchCollision;
 
-private:
-	UFUNCTION()
-	void OnSearchOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnSearchOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+//private:
+//	UFUNCTION()
+//	void OnSearchOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+//
+//	UFUNCTION()
+//	void OnSearchOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 //ComboAttack Section
 protected:

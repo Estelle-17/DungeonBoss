@@ -15,6 +15,7 @@
 #include "MotionWarpingComponent.h"
 #include "Stat/DBCharacterStatComponent.h"
 #include "DBPlayerItemComponent.h"
+#include "DBInteractionBetweenPlayerAndNPC.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -53,6 +54,11 @@ APlayerCharacter::APlayerCharacter()
 	if (PlayerGuardOrDodgeRef.Object)
 	{
 		GuardOrDodgeAction = PlayerGuardOrDodgeRef.Object;
+	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> InteractionRef = TEXT("/Script/EnhancedInput.InputAction'/Game/Input/IA_Player_Interaction.IA_Player_Interaction'");
+	if (InteractionRef.Object)
+	{
+		InteractionAction = InteractionRef.Object;
 	}
 
 	//Collision Section
@@ -145,6 +151,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	enhancedInputComponent->BindAction(ChargeAttackAction, ETriggerEvent::Canceled, this, &APlayerCharacter::PlayerChargeAttackDisable);
 	enhancedInputComponent->BindAction(ChargeAttackAction, ETriggerEvent::Completed, this, &APlayerCharacter::PlayerChargeAttackDisable);
 	enhancedInputComponent->BindAction(GuardOrDodgeAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerGuardOrDodge);
+	enhancedInputComponent->BindAction(InteractionAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerInteractionAction);
 }
 
 void APlayerCharacter::PlayerMove(const FInputActionValue& Value)
@@ -301,7 +308,10 @@ void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)
 	}
 }
 
-
+void APlayerCharacter::PlayerInteractionAction(const FInputActionValue& Value)
+{
+	DBInteractionBetweenPlayerAndNPC->InteractionNPC();
+}
 
 void APlayerCharacter::AttackHitCheck()
 {

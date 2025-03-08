@@ -8,6 +8,8 @@
 #include "GameData/NeedForMakeItemData/DBMakeItemsData.h"
 #include "UI/Inventory/DBInventoryWidget.h"
 #include "GameData/DBItemSingleton.h"
+#include "Player/DBPlayerController.h"
+#include "Props/DBNPCBaseActor.h"
 
 UDBProductionNPCWidget::UDBProductionNPCWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -133,7 +135,6 @@ void UDBProductionNPCWidget::MakeItem()
 
 	//아이템을 인벤토리에 생성
 	InventoryWidget->AddEquipItem(CurrentEquipItemIDOfSelectMenu);
-	//왜 아이템이 안생겨 ㅅ	ㅂ
 
 	//생성하면서 사용된 재료들을 인벤토리에서 제거
 	for (int index = 0; index < 6; index++)
@@ -146,4 +147,19 @@ void UDBProductionNPCWidget::MakeItem()
 	}
 
 	DisableAllMenuUI();
+}
+
+FReply UDBProductionNPCWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	FEventReply Reply;
+	Reply.NativeReply = Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+
+	if (InKeyEvent.GetKey() == EKeys::Escape)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Collapse ProductionNPCWidget"));
+
+		NPCBaseActor->PlayerInteractionAction();
+	}
+
+	return Reply.NativeReply;
 }

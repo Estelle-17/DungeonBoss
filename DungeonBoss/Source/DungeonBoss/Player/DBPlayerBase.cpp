@@ -22,6 +22,7 @@
 #include "UI/Inventory/DBInventoryWidget.h"
 #include "DBPlayerItemComponent.h"
 #include "DBPlayerController.h"
+#include "DBInteractionBetweenPlayerAndNPC.h"
 
 // Sets default values
 ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
@@ -163,9 +164,10 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 	SearchCollision->SetGenerateOverlapEvents(true);
 	SearchCollision->SetCollisionProfileName(TEXT("SearchCollision"));
 
-	//Collision Section
-	SearchCollision->OnComponentBeginOverlap.AddDynamic(this, &ADBPlayerBase::OnSearchOverlapBegin);
-	SearchCollision->OnComponentEndOverlap.AddDynamic(this, &ADBPlayerBase::OnSearchOverlapEnd);
+	if (HasAuthority() || IsLocallyControlled())
+	{
+		DBInteractionBetweenPlayerAndNPC = CreateDefaultSubobject<UDBInteractionBetweenPlayerAndNPC>(TEXT("InteractionBetweenPlayerAndNPC"));
+	}
 }
 
 // Called when the game starts or when spawned
@@ -178,6 +180,12 @@ void ADBPlayerBase::BeginPlay()
 	if (!HasAuthority() || !IsLocallyControlled())
 	{
 		SearchCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	//직접 조종하는 플레이어가 아닐 경우에는 인지하지 않음
+	if (HasAuthority() || IsLocallyControlled())
+	{
+		DBInteractionBetweenPlayerAndNPC->PlayerSearchOverlapSetting(this);
 	}
 }
 
@@ -611,39 +619,53 @@ void ADBPlayerBase::SetupInventoryWidget(UDBInventoryWidget* InInventoryWidget)
 	}
 }
 
-void ADBPlayerBase::OnSearchOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	if (OtherActor->Tags.Contains(FName(TEXT("MultiplayerNPC"))))
-	{
-		UE_LOG(LogTemp, Log, TEXT("Search : %s"), *OtherActor->GetFName().ToString());
-		//특정 범위 내에 로컬 플레이어가 있을 경우 MultiUI를 열 수 있는 상태인 것을 알려줌
-
-		ADBPlayerController* DBPlayerController = Cast<ADBPlayerController>(GetWorld()->GetFirstPlayerController());
-
-		if (DBPlayerController)
-		{
-			UE_LOG(LogTemp, Log, TEXT("SetMultiUIWidgetEnable"));
-			DBPlayerController->SetMultiUIWidgetEnable();
-		}
-	}
-}
-
-void ADBPlayerBase::OnSearchOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	if (OtherActor->Tags.Contains(FName(TEXT("MultiplayerNPC"))))
-	{
-		UE_LOG(LogTemp, Log, TEXT("Search : %s"), *OtherActor->GetFName().ToString());
-		//특정 범위 내에 로컬 플레이어가 있을 경우 MultiUI를 열 수 있는 상태인 것을 알려줌
-
-		ADBPlayerController* DBPlayerController = Cast<ADBPlayerController>(GetWorld()->GetFirstPlayerController());
-
-		if (DBPlayerController)
-		{
-			UE_LOG(LogTemp, Log, TEXT("SetMultiUIWidgetDisable"));
-			DBPlayerController->SetMultiUIWidgetDisable();
-		}
-	}
-}
+//void ADBPlayerBase::OnSearchOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+//{
+//	if (OtherActor->Tags.Contains(FName(TEXT("MultiplayerNPC"))))
+//	{
+//		UE_LOG(LogTemp, Log, TEXT("Search : %s"), *OtherActor->GetFName().ToString());
+//		//특정 범위 내에 플레이어가 있을 경우 MultiUI를 열 수 있는 상태인 것을 알려줌
+//
+//		ADBPlayerController* DBPlayerController = Cast<ADBPlayerController>(GetWorld()->GetFirstPlayerController());
+//
+//		if (DBPlayerController)
+//		{
+//			UE_LOG(LogTemp, Log, TEXT("SetMultiUIWidgetEnable"));
+//			DBPlayerController->SetMultiUIWidgetEnable();
+//		}
+//	}
+//	else if (OtherActor->Tags.Contains(FName(TEXT("ItemMakingNPC"))))
+//	{
+//		UE_LOG(LogTemp, Log, TEXT("Search : %s"), *OtherActor->GetFName().ToString());
+//		//특정 범위 내에 플레이어가 있을 경우 ItemMakingNPCUI를 열 수 있는 상태인 것을 알려줌
+//
+//		
+//	}
+//}
+//
+//void ADBPlayerBase::OnSearchOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+//{
+//	if (OtherActor->Tags.Contains(FName(TEXT("MultiplayerNPC"))))
+//	{
+//		UE_LOG(LogTemp, Log, TEXT("Search : %s"), *OtherActor->GetFName().ToString());
+//		//특정 범위 내에 플레이어가 있을 경우 MultiUI를 열 수 있는 상태인 것을 알려줌
+//
+//		ADBPlayerController* DBPlayerController = Cast<ADBPlayerController>(GetWorld()->GetFirstPlayerController());
+//
+//		if (DBPlayerController)
+//		{
+//			UE_LOG(LogTemp, Log, TEXT("SetMultiUIWidgetDisable"));
+//			DBPlayerController->SetMultiUIWidgetDisable();
+//		}
+//	}
+//	else if (OtherActor->Tags.Contains(FName(TEXT("ItemMakingNPC"))))
+//	{
+//		UE_LOG(LogTemp, Log, TEXT("Search : %s"), *OtherActor->GetFName().ToString());
+//		//특정 범위 내에 플레이어가 있을 경우 MultiUI를 열 수 있는 상태인 것을 알려줌
+//
+//		
+//	}
+//}
 
 #pragma endregion
 

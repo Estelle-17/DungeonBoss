@@ -35,7 +35,6 @@ public:
 
 public:
 	FORCEINLINE void SetMultiUIWidgetEnable() { bIsCanMultiUIWidgetOn = true; }
-	void SetMultiUIWidgetDisable();
 
 //Timer Section
 //Functions
@@ -58,12 +57,6 @@ protected:
 	TObjectPtr<class UDBInventoryWidget> DBInventoryWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
-	TSubclassOf<class UDBMultiUIWidget> DBMultiUIWidgetClass;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
-	TObjectPtr<class UDBMultiUIWidget> DBMultiUIWidget;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
 	TSubclassOf<class UDBItemDragVisualWidget> DBItemDragVisualWidgetClass;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
@@ -75,14 +68,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
 	TObjectPtr<class UDBItemCountScrollBarWidget> DBItemCountScrollBarWidget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
-	TSubclassOf<class UDBProductionNPCWidget> DBProductionNPCWidgetClass;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = HUD)
-	TObjectPtr<class UDBProductionNPCWidget> DBProductionNPCWidget;
-
 	bool bIsCanMultiUIWidgetOn;
-	bool bIsCanEquipNPCWidgetOn;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, Meta = (AllowPrivateAccess = "true"))
@@ -96,20 +82,21 @@ protected:
 
 //Functions
 public:
+	FORCEINLINE UDBInventoryWidget* GetInventoryWidget() { return DBInventoryWidget; }
 	FORCEINLINE UDBItemDragVisualWidget* GetItemDragVisualWidget() { return DBItemDragVisualWidget; }
 	FORCEINLINE UDBItemCountScrollBarWidget* GetItemCountScrollBarWidget() { return DBItemCountScrollBarWidget; }
 	void LoadWidget(UUserWidget* UIWidget);
 	void CollapseWidget(FString WidgetName);
 	bool CheckWidgetVisible();
 
-
 protected:
 	void PlayerInventoryAction(const FInputActionValue& Value);
-	void PlayerInteractionAction(const FInputActionValue& Value);
 
 //Network Section
 protected:
 	UPROPERTY()
-	TObjectPtr<ADBNetworkSetting> NetworkSetting;
+	TObjectPtr<class ADBNetworkSetting> NetworkSetting;
+public:
+	FORCEINLINE ADBNetworkSetting* GetNetworkSetting() { return NetworkSetting; }
 
 };

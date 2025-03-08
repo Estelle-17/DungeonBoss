@@ -23,12 +23,13 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 
+//Variables
 public:
-	void BindingButtons(ADBNetworkSetting* NetworkSetting);
+	class ADBNPCBaseActor* NPCBaseActor;
 
-	UFUNCTION(BlueprintCallable)
-	void JoinGameServer();
-
+//Widgets
+//Variables
+public:
 	UPROPERTY()
 	TObjectPtr<class UCheckBox> PrivateCheck;
 
@@ -39,11 +40,6 @@ public:
 	TObjectPtr<class UEditableTextBox> JoinRoomText;
 
 protected:
-	void SetPlayerLocalAddress();
-
-	UFUNCTION(BlueprintCallable)
-	void CoverImageOnOff();
-
 	UPROPERTY()
 	TObjectPtr<class UButton> CreateRoomButton;
 
@@ -70,6 +66,17 @@ protected:
 
 	FOnJoinGameServerDelegate OnJoinGameServerDelegate;
 
+//Functions
+protected:
+	void SetPlayerLocalAddress();
+
+	UFUNCTION(BlueprintCallable)
+	void CoverImageOnOff();
+public:
+	void BindingButtons(ADBNetworkSetting* NetworkSetting);
+
+	UFUNCTION(BlueprintCallable)
+	void JoinGameServer();
 //Input Section
 protected:
 	FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
