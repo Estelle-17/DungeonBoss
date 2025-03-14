@@ -1,27 +1,20 @@
-/*
-* Writer : KimJunWoo
-*
-* This Source code is enemy AI behaviortree and blackboard setting
-*
-* Last Update : 2023/10/12
-*/
-
 
 #include "AI/DBAIController.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardData.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "GameData/DBEnemyStat.h"
 #include "DBAI.h"
 
 ADBAIController::ADBAIController()
 {
 	//Blackboard ¹× BehaviorTree ¼³Á¤
-	static ConstructorHelpers::FObjectFinder<UBlackboardData> BBAssetRef(TEXT("/Script/AIModule.BlackboardData'/Game/ArenaBattle/AI/BB_ABCharacter.BB_ABCharacter'"));
+	static ConstructorHelpers::FObjectFinder<UBlackboardData> BBAssetRef(TEXT("/Script/AIModule.BlackboardData'/Game/AI/Boss/BB_ArmoredBoss.BB_ArmoredBoss'"));
 	if (nullptr != BBAssetRef.Object)
 	{
 		BBAsset = BBAssetRef.Object;
 	}
-	static ConstructorHelpers::FObjectFinder<UBehaviorTree> BTAssetRef(TEXT("/Script/AIModule.BehaviorTree'/Game/ArenaBattle/AI/BT_ABCharacter.BT_ABCharacter'"));
+	static ConstructorHelpers::FObjectFinder<UBehaviorTree> BTAssetRef(TEXT("/Script/AIModule.BehaviorTree'/Game/AI/Boss/BT_ArmoredBoss.BT_ArmoredBoss'"));
 	if (nullptr != BTAssetRef.Object)
 	{
 		BTAsset = BTAssetRef.Object;
@@ -46,7 +39,6 @@ void ADBAIController::StopAI()
 	if (BTComponent)
 	{
 		BTComponent->StopTree();
-
 	}
 }
 

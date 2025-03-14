@@ -8,65 +8,25 @@
 #include "Components/CapsuleComponent.h"
 #include "UI/DBHpBarWidget.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "AI/DBAIController.h"
+#include "GameData/DBItemSingleton.h"
+#include "MotionWarpingComponent.h"
 
 // Sets default values
 ADBEnemyBase::ADBEnemyBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	
-	Capsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Root"));
-	SetRootComponent(Capsule);
-	
-	Body = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Body"));
-	Body->SetupAttachment(Capsule);
 
-	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Weapon"));
-	WeaponMesh->SetupAttachment(Body, TEXT("Bip001-R-Hand"));
-	WeaponMesh->SetRelativeLocation(FVector3d(10.0f, 0.0f, -4.0f));
-	WeaponMesh->SetRelativeRotation(FRotator(-90.0f, 0.0f, -90.0f));
+	//AI Setting
+	AIControllerClass = ADBAIController::StaticClass();
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	//몹의 회전 세팅
+	bUseControllerRotationYaw = false;
 
-	ShieldMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Shield"));
-	ShieldMesh->SetupAttachment(Body, TEXT("Bip001-L-Hand"));
-	ShieldMesh->SetRelativeLocation(FVector3d(12.0f, -1.0f, -2.0f));
-	ShieldMesh->SetRelativeRotation(FRotator(90.0f, 0.0f, 90.0f));
-
-	static ConstructorHelpers::FObjectFinder<UCapsuleComponent> CapsuleComponentRef(TEXT("/Script/Engine.StaticMesh'/Engine/BasicShapes/Capsule.Capsule'"));
-	if (CapsuleComponentRef.Object)
-	{
-		Capsule = CapsuleComponentRef.Object;
-	}
-
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh> BodyMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/Prefab/Boss/Boss.Boss'"));
-	if (BodyMeshRef.Object)
-	{
-		Body->SetSkeletalMesh(BodyMeshRef.Object);
-	}
-
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> WeaponMeshRef(TEXT("/Script/Engine.StaticMesh'/Game/Prefab/Boss/BossSword.BossSword'"));
-	if (WeaponMeshRef.Object)
-	{
-		WeaponMesh->SetStaticMesh(WeaponMeshRef.Object);
-	}
-
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> ShieldMeshRef(TEXT("/Script/Engine.StaticMesh'/Game/Prefab/Boss/BossShield.BossShield'"));
-	if (ShieldMeshRef.Object)
-	{
-		ShieldMesh->SetStaticMesh(ShieldMeshRef.Object);
-	}
-
-	Capsule->SetCapsuleHalfHeight(0);
-	Capsule->SetCapsuleRadius(0);
-
-	Body->SetGenerateOverlapEvents(true);
-	Body->SetRelativeScale3D(FVector(1.5f, 1.5f, 1.5f));
 	Tags.Add(FName("Enemy"));
 
-	//Stat Section
-	Stat = CreateDefaultSubobject<UDBEnemyStatComponent>(TEXT("Stat"));
-
-	//Widget Section
-	HpBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("HpBar"));
+	Stat = CreateDefaultSubobject<UDBEnemyStatComponent>(TEXT("EnemyStat"));
 }
 
 // Called when the game starts or when spawned
@@ -74,13 +34,30 @@ void ADBEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (Stat)
+	{
+		FName CurrentEnemyType = TEXT("ARMORED_BOSS");
+
+		const FDBEnemyStat* EnemyStatDataTable = UDBItemSingleton::Get().GetLoadDBEnemyStatTableData(CurrentEnemyType);
+		if (EnemyStatDataTable)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 7.0f, FColor::Green, FString::Printf(TEXT("Check %s Stat : %f"), *CurrentEnemyType.ToString(), EnemyStatDataTable->AttackRange));
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 7.0f, FColor::Green, FString::Printf(TEXT("EnemyStat is nullptr")));
+		}
+
+		Stat->SetBaseStat(EnemyStatDataTable);
+	}
 }
 
-// Called every frame
 void ADBEnemyBase::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
-
+	if (bCheckMotionWarping)
+	{
+		UpdateMotionWarpingRotation(TargetPawn->GetActorLocation());
+	}
 }
 
 float ADBEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -90,4 +67,37 @@ float ADBEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 	Stat->ApplyDamage(DamageAmount);
 
 	return DamageAmount;
+}
+
+
+float ADBEnemyBase::GetAIDetectRange()
+{
+	return 5000.0f;
+}
+
+float ADBEnemyBase::GetAIAttackRange()
+{
+	return Stat->GetTotalStat().AttackRange;
+}
+
+float ADBEnemyBase::GetAITurnSpeed()
+{
+	return 5.0f;
+}
+
+void ADBEnemyBase::SetAIAttackDelegate(const FAIEnemyAttackFinished& InOnAttackFinished)
+{
+	OnAttackFinished = InOnAttackFinished;
+}
+
+void ADBEnemyBase::AttackByAI()
+{
+	PlaySwordAttackAction();
+}
+
+void ADBEnemyBase::NotifyComboActionEnd()
+{
+	Super::NotifyComboActionEnd();
+
+	OnAttackFinished.ExecuteIfBound();
 }

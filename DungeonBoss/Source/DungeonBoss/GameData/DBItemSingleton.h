@@ -10,6 +10,7 @@
 #include "Item/DBCountableItemData.h"
 #include "GameData/DBMakeItemMenuTable.h"
 #include "GameData/DBMaterialForMakeItemTable.h"
+#include "GameData/DBEnemyStat.h"
 #include "DBItemSingleton.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogDBItemSingleton, Error, All);
@@ -38,10 +39,10 @@ public:
 	FORCEINLINE TArray<FDBMakeItemMenuTable*> GetLoadMakeItemMenuTableData() { return MakeItemMenuItems; }
 //MaterialForMakeItemTable
 	FORCEINLINE FDBMaterialForMakeItemTable* GetLoadDBMaterialForMakeItemTableData(FName ItemID) { return MaterialForMakeItemTable->FindRow<FDBMaterialForMakeItemTable>(ItemID, TEXT("")); }
-
+//EnemyStatTable
+	FORCEINLINE FDBEnemyStat* GetLoadDBEnemyStatTableData(FName ItemID) { return EnemyStatTable->FindRow<FDBEnemyStat>(ItemID, TEXT("")); }
 private:
 	class UDataTable* EquipItemDataTable;
-
 
 	class UDataTable* CountableItemDataTable;
 
@@ -52,4 +53,7 @@ private:
 	TArray<FDBMakeItemMenuTable*> MakeItemMenuItems;
 
 	class UDataTable* MaterialForMakeItemTable;
+
+	class UDataTable* EnemyStatTable;
+	TArray<FDBEnemyStat*> EnemyStatTableItems;
 };

@@ -30,6 +30,7 @@ public:
 
 	FORCEINLINE void AddBaseStat(const FDBEnemyStat& AddBaseStat) { BaseStat = BaseStat + AddBaseStat; OnStatChanged.Broadcast(GetBaseStat(), GetModifierStat()); }
 	FORCEINLINE void SetBaseStat(const FDBEnemyStat& InBaseStat) { BaseStat = InBaseStat; OnStatChanged.Broadcast(GetBaseStat(), GetModifierStat()); }
+	void SetBaseStat(const FDBEnemyStat* InBaseStat);
 	FORCEINLINE void SetModifierStat(const FDBEnemyStat& InModifierStat) { ModifierStat = InModifierStat; OnStatChanged.Broadcast(GetBaseStat(), GetModifierStat()); }
 
 	FORCEINLINE const FDBEnemyStat& GetBaseStat() const { return BaseStat; }

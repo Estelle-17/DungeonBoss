@@ -23,10 +23,21 @@ void UDBEnemyStatComponent::InitializeComponent()
 	FDBEnemyStat EnemyStat;
 	EnemyStat.MaxHp = 100.0f;
 	EnemyStat.Attack = 10.0f;
-	EnemyStat.MovementSpeed = 1.0f;
+	EnemyStat.MoveSpeed = 1.0f;
 
 	AddBaseStat(EnemyStat);
 	SetHp(BaseStat.MaxHp);
+}
+
+void UDBEnemyStatComponent::SetBaseStat(const FDBEnemyStat* InBaseStat)
+{
+	BaseStat.MaxHp = InBaseStat->MaxHp;
+	BaseStat.Attack = InBaseStat->Attack;
+	BaseStat.AttackRange = InBaseStat->AttackRange;
+	BaseStat.Defense = InBaseStat->Defense;
+	BaseStat.MoveSpeed = InBaseStat->MoveSpeed;
+
+	OnStatChanged.Broadcast(GetBaseStat(), GetModifierStat());
 }
 
 float UDBEnemyStatComponent::ApplyDamage(float InDamage)

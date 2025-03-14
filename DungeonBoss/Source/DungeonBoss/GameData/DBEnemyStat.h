@@ -10,7 +10,7 @@ struct FDBEnemyStat : public FTableRowBase
 	GENERATED_BODY()
 
 public:
-	FDBEnemyStat() : MaxHp(0.0f), Attack(0.0f), Defense(0.0f), MovementSpeed(0.0f) {}
+	FDBEnemyStat() : MaxHp(0.0f), Attack(0.0f), AttackRange(0.0f), Defense(0.0f), MoveSpeed(0.0f) {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
 	float MaxHp;
@@ -19,10 +19,13 @@ public:
 	float Attack;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
+	float AttackRange;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
 	float Defense;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stat)
-	float MovementSpeed;
+	float MoveSpeed;
 
 	FDBEnemyStat operator+(const FDBEnemyStat& Other) const
 	{

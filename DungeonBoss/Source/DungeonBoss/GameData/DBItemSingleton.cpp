@@ -44,6 +44,20 @@ UDBItemSingleton::UDBItemSingleton()
 		MaterialForMakeItemTable = MaterialForMakeItemTableRef.Object;
 		check(MaterialForMakeItemTable->GetRowMap().Num() > 0);
 	}
+
+	static ConstructorHelpers::FObjectFinder<UDataTable> EnemyStatDataTableRef(TEXT("/Script/Engine.DataTable'/Game/GameData/DBEnemyStatTable.DBEnemyStatTable'"));
+	if (nullptr != EnemyStatDataTableRef.Object)
+	{
+		EnemyStatTable = EnemyStatDataTableRef.Object;
+		check(EnemyStatTable->GetRowMap().Num() > 0);
+
+		EnemyStatTable->GetAllRows<FDBEnemyStat>(TEXT("GetAllRows : EnemyStatTableItems"), EnemyStatTableItems);
+
+		for(FDBEnemyStat* EnemyStat : EnemyStatTableItems)
+		{
+			UE_LOG(LogTemp, Log, TEXT("%f, %f, %f, %f, %f"), EnemyStat->MaxHp, EnemyStat->Attack, EnemyStat->AttackRange, EnemyStat->Defense, EnemyStat->MoveSpeed);
+		}
+	}
 }
 
 UDBItemSingleton& UDBItemSingleton::Get()

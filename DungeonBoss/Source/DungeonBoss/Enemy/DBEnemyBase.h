@@ -3,47 +3,46 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
 #include "GameData/DBEnemyStat.h"
+#include "Interface/DBEnemyAIInterface.h"
+#include "Enemy/DBEnemy_ArmoredBoss.h"
 #include "DBEnemyBase.generated.h"
 
 UCLASS()
-class DUNGEONBOSS_API ADBEnemyBase : public AActor
+class DUNGEONBOSS_API ADBEnemyBase : public ADBEnemy_ArmoredBoss, public IDBEnemyAIInterface
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
+	//ADBEnemyBase();
 	ADBEnemyBase();
 
+//Component Section
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+public:
+	virtual void Tick(float DeltaTime) override;
 
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<class UCapsuleComponent> Capsule;
+//AI Section
+protected:
+	virtual void NotifyComboActionEnd() override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Mesh)
-	TObjectPtr<class USkeletalMeshComponent> Body;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UStaticMeshComponent> WeaponMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UStaticMeshComponent> ShieldMesh;
-
-// Stat Section
+//Stat Section
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UDBEnemyStatComponent> Stat;
-	
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Widget, Meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UWidgetComponent> HpBar;
+	class UDBEnemyStatComponent* Stat;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+//IDBEnemyAIInterface
+protected:
+	virtual float GetAIDetectRange() override;
+	virtual float GetAIAttackRange() override;
+	virtual float GetAITurnSpeed() override;
+
+	virtual void SetAIAttackDelegate(const FAIEnemyAttackFinished& InOnAttackFinished) override;
+	virtual void AttackByAI() override;
 
 //Damage Section
 protected:
