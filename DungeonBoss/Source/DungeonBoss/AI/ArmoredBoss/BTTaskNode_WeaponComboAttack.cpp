@@ -1,18 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
-#include "AI/BTTask_CloseRangeAttack.h"
-#include "DBAIController.h"
+#include "AI/ArmoredBoss/BTTaskNode_WeaponComboAttack.h"
+#include "AI/DBAIController.h"
 #include "Interface/DBEnemyAIInterface.h"
 
-UBTTask_CloseRangeAttack::UBTTask_CloseRangeAttack()
+UBTTaskNode_WeaponComboAttack::UBTTaskNode_WeaponComboAttack()
 {
 }
 
-EBTNodeResult::Type UBTTask_CloseRangeAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+EBTNodeResult::Type UBTTaskNode_WeaponComboAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	EBTNodeResult::Type Result = Super::ExecuteTask(OwnerComp, NodeMemory);
-
 	//제어하고 있는 폰의 정보를 가져옴
 	APawn* ControllingPawn = OwnerComp.GetAIOwner()->GetPawn();
 	if (ControllingPawn == nullptr)
@@ -35,6 +32,6 @@ EBTNodeResult::Type UBTTask_CloseRangeAttack::ExecuteTask(UBehaviorTreeComponent
 	);
 
 	AIPawn->SetAIAttackDelegate(OnAttackFinished);
-	AIPawn->AttackByAI();
+	AIPawn->AttackByAI("WeaponComboAttack");
 	return EBTNodeResult::InProgress;
 }

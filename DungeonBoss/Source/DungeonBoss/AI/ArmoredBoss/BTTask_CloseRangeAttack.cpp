@@ -1,15 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "AI/BTTask_MiddleRangeAttack.h"
-#include "DBAIController.h"
+#include "AI/ArmoredBoss/BTTask_CloseRangeAttack.h"
+#include "AI/DBAIController.h"
 #include "Interface/DBEnemyAIInterface.h"
 
-UBTTask_MiddleRangeAttack::UBTTask_MiddleRangeAttack()
+UBTTask_CloseRangeAttack::UBTTask_CloseRangeAttack()
 {
 }
 
-EBTNodeResult::Type UBTTask_MiddleRangeAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+EBTNodeResult::Type UBTTask_CloseRangeAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	EBTNodeResult::Type Result = Super::ExecuteTask(OwnerComp, NodeMemory);
 
@@ -35,6 +35,6 @@ EBTNodeResult::Type UBTTask_MiddleRangeAttack::ExecuteTask(UBehaviorTreeComponen
 	);
 
 	AIPawn->SetAIAttackDelegate(OnAttackFinished);
-	AIPawn->AttackByAI();
+	AIPawn->AttackByAI("SwordAttack");
 	return EBTNodeResult::InProgress;
 }

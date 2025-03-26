@@ -34,6 +34,7 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 	//Capsule ¼³Á¤
 	GetCapsuleComponent()->InitCapsuleSize(35.f, 88.0f);
 	GetCapsuleComponent()->ComponentTags.Add(FName("Player"));
+	Tags.Add(FName("Player"));
 	if (HasAuthority() || IsLocallyControlled())
 	{
 		GetCapsuleComponent()->ComponentTags.Add(FName("LocallyControlled"));

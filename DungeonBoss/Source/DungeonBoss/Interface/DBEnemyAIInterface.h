@@ -14,6 +14,7 @@ class UDBEnemyAIInterface : public UInterface
 };
 
 DECLARE_DELEGATE(FAIEnemyAttackFinished)
+DECLARE_DELEGATE(FAITurnToTargetFinished)
 /**
  * 
  */
@@ -28,7 +29,10 @@ public:
 	virtual float GetAITurnSpeed() = 0;
 
 	virtual void SetAIAttackDelegate(const FAIEnemyAttackFinished& InOnAttackFinished) = 0;
-	virtual void AttackByAI() = 0;
+	virtual void SetAITurnToTargetDelegate(const FAIEnemyAttackFinished& InOnTurnToTargetFinished) = 0;
+	virtual void AttackByAI(FString SkillName) = 0;
+	virtual void TurnToTargetByAI() = 0;
 
 	FAIEnemyAttackFinished OnAttackFinished;
+	FAITurnToTargetFinished OnTurnToTargetFinished;
 };

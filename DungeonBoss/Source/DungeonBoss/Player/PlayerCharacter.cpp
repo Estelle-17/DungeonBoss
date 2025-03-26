@@ -22,7 +22,7 @@ APlayerCharacter::APlayerCharacter()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.TickInterval = 0.033;
+	PrimaryActorTick.TickInterval = 0.033f;
 
 	//EnhancedInputAction
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> InputMappingContextRef = TEXT("/Script/EnhancedInput.InputMappingContext'/Game/Input/IMC_Player.IMC_Player'");
@@ -356,7 +356,6 @@ void APlayerCharacter::AttackHitConfirm(AActor* HitActor)
 		const float AttackDamage = Stat->GetTotalStat().Attack;
 		FDamageEvent DamageEvent;
 		HitActor->TakeDamage(AttackDamage, DamageEvent, GetController(), this);
-		
 	}
 }
 

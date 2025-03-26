@@ -29,11 +29,7 @@ public:
 //AI Section
 protected:
 	virtual void NotifyComboActionEnd() override;
-
-//Stat Section
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
-	class UDBEnemyStatComponent* Stat;
+	virtual void NotifyTurnActionEnd() override;
 
 //IDBEnemyAIInterface
 protected:
@@ -42,9 +38,15 @@ protected:
 	virtual float GetAITurnSpeed() override;
 
 	virtual void SetAIAttackDelegate(const FAIEnemyAttackFinished& InOnAttackFinished) override;
-	virtual void AttackByAI() override;
+	virtual void SetAITurnToTargetDelegate(const FAIEnemyAttackFinished& InOnTurnToTargetFinished) override;
+	virtual void AttackByAI(FString SkillName) override;
+	virtual void TurnToTargetByAI() override;
 
 //Damage Section
+//Functions
 protected:
 	float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+
+	UFUNCTION()
+	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 };

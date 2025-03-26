@@ -6,6 +6,7 @@
 #include "DungeonBoss.h"
 #include "Components/WidgetComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/BoxComponent.h"
 #include "UI/DBHpBarWidget.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "AI/DBAIController.h"
@@ -27,6 +28,9 @@ ADBEnemyBase::ADBEnemyBase()
 	Tags.Add(FName("Enemy"));
 
 	Stat = CreateDefaultSubobject<UDBEnemyStatComponent>(TEXT("EnemyStat"));
+
+	//WeaponCollision->OnComponentBeginOverlap.AddDynamic(this, &ADBEnemyBase::OnOverlapBegin);
+	//ShieldCollision->OnComponentBeginOverlap.AddDynamic(this, &ADBEnemyBase::OnOverlapBegin);
 }
 
 // Called when the game starts or when spawned
@@ -69,6 +73,18 @@ float ADBEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 	return DamageAmount;
 }
 
+void ADBEnemyBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	DB_LOG(LogDBNetwork, Log, TEXT("Check Player : %s"), *OtherActor->GetFName().ToString());
+
+	if (OtherActor->Tags.Contains(FName(TEXT("Player"))) && !HitPlayers.Contains(OtherActor))
+	{
+		DB_LOG(LogDBNetwork, Log, TEXT("Find Player!"));
+
+		HitPlayers.Emplace(OtherActor);
+		AttackHitConfirm(OtherActor);
+	}
+}
 
 float ADBEnemyBase::GetAIDetectRange()
 {
@@ -90,9 +106,19 @@ void ADBEnemyBase::SetAIAttackDelegate(const FAIEnemyAttackFinished& InOnAttackF
 	OnAttackFinished = InOnAttackFinished;
 }
 
-void ADBEnemyBase::AttackByAI()
+void ADBEnemyBase::SetAITurnToTargetDelegate(const FAIEnemyAttackFinished& InOnTurnToTargetFinished)
 {
-	PlaySwordAttackAction();
+	OnTurnToTargetFinished = InOnTurnToTargetFinished;
+}
+
+void ADBEnemyBase::AttackByAI(FString SkillName)
+{
+	PlayAttackAction(SkillName);
+}
+
+void ADBEnemyBase::TurnToTargetByAI()
+{
+	PlayTurnToTargetAction();
 }
 
 void ADBEnemyBase::NotifyComboActionEnd()
@@ -100,4 +126,11 @@ void ADBEnemyBase::NotifyComboActionEnd()
 	Super::NotifyComboActionEnd();
 
 	OnAttackFinished.ExecuteIfBound();
+}
+
+void ADBEnemyBase::NotifyTurnActionEnd()
+{
+	Super::NotifyTurnActionEnd();
+
+	OnTurnToTargetFinished.ExecuteIfBound();
 }

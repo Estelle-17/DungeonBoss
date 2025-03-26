@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "DBEnemyMotionWarpingInterface.generated.h"
+#include "DBArmoredBossAttackInterface.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class UDBEnemyMotionWarpingInterface : public UInterface
+class UDBArmoredBossAttackInterface : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -16,15 +16,15 @@ class UDBEnemyMotionWarpingInterface : public UInterface
 /**
  * 
  */
-class DUNGEONBOSS_API IDBEnemyMotionWarpingInterface
+class DUNGEONBOSS_API IDBArmoredBossAttackInterface
 {
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual void CheckTagetLocationBegin() = 0;
-	virtual void CheckTagetLocationEnd() = 0;
-
-	virtual void EnemyJumpStateBegin() = 0;
-	virtual void EnemyJumpStateEnd() = 0;
+	virtual void SwordAttackCheck() = 0;
+	virtual void ShieldAttackCheck() = 0;
+	virtual void AroundAttackCheck() = 0;
+	virtual void ForwardAttackCheck() = 0;
+	virtual void ResetHitPlayers() = 0;
 };
