@@ -27,4 +27,10 @@ public:
 	virtual void AroundAttackCheck() = 0;
 	virtual void ForwardAttackCheck() = 0;
 	virtual void ResetHitPlayers() = 0;
+	virtual void ReleaseWeapons() = 0;
+
+	virtual void SwordAttackBegin() = 0;
+	virtual void SwordAttackEnd() = 0;
+	virtual void CounterStateBegin() = 0;
+	virtual void CounterStateEnd() = 0;
 };

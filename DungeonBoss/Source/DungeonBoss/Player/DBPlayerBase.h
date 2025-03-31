@@ -12,6 +12,8 @@
 #include "Stat/DBCharacterStatComponent.h"
 #include "DBPlayerBase.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnUpdateEnemyHpBar, float /*EnemyHpPercnet*/, FName /*EnemyName*/);
+
 UCLASS()
 class DUNGEONBOSS_API ADBPlayerBase : public ACharacter, public IDBAnimationNotifyInterface, public IDBAnimationAttackInterface,
 	public IDBCharacterHUDInterface, public IDBMotionWarpingInterface
@@ -58,6 +60,10 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UDBCharacterStatComponent> Stat;
+
+//Enemy Section
+protected:
+	FOnUpdateEnemyHpBar OnUpdateEnemyHpBar;
 
 //Item Section
 protected:

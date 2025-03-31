@@ -39,6 +39,6 @@ bool UBTDecorator_AttackInMiddleRange::CalculateRawConditionValue(UBehaviorTreeC
 	float DistanceToTaget = ControllingPawn->GetDistanceTo(Target);
 	float AttackRangeWithRadius = AIPawn->GetAIAttackRange() * 2;
 	GEngine->AddOnScreenDebugMessage(-1, 7.0f, FColor::Green, FString::Printf(TEXT("DistanceToTaget : %f, AttackRange : %f"), DistanceToTaget, AttackRangeWithRadius));
-	bResult = ((AttackRangeWithRadius  * 0.75f) <= DistanceToTaget) && (DistanceToTaget <= AttackRangeWithRadius);
+	bResult = ((AttackRangeWithRadius  * 0.5f) <= DistanceToTaget) && (DistanceToTaget <= AttackRangeWithRadius);
 	return bResult;
 }

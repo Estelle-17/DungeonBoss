@@ -53,6 +53,15 @@ void ADBEnemyBase::BeginPlay()
 		}
 
 		Stat->SetBaseStat(EnemyStatDataTable);
+		//Stat->ResetHp();
+
+		ADBAIController* AIController = Cast<ADBAIController>(GetController());
+		if (AIController)
+		{
+			Stat->OnHpZero.AddUObject(AIController, &ADBAIController::StopAI);
+		}
+
+		Stat->OnHpZero.AddUObject(this, &ADBEnemyBase::PlayDeadAction);
 	}
 }
 
@@ -67,6 +76,13 @@ void ADBEnemyBase::Tick(float DeltaTime)
 float ADBEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if(bIsCounterState)
+	{ 
+		PlayCounterAttackAction();
+
+		return DamageAmount;
+	}
 
 	Stat->ApplyDamage(DamageAmount);
 

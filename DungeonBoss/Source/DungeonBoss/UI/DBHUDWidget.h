@@ -21,6 +21,7 @@ public:
 public:
 	void UpdateStat(const FDBCharacterStat& BaseStat, const FDBCharacterStat& ModifierStat);
 	void UpdateHpBar(float NewCurrentHp);
+	void UpdateBossHpBar(float NewCurrentHp, FName BossName);
 
 protected:
 	virtual void NativeConstruct() override;
@@ -28,5 +29,8 @@ protected:
 protected:
 	UPROPERTY()
 	TObjectPtr<class UDBHpBarWidget> HpBar;
+
+	UPROPERTY()
+	TObjectPtr<class UDBEnemyHpBarWidget> EnemyHpBar;
 
 };

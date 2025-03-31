@@ -608,6 +608,8 @@ void ADBPlayerBase::SetupHUDWidget(UDBHUDWidget* InHUDWidget)
 
 		Stat->OnStatChanged.AddUObject(InHUDWidget, &UDBHUDWidget::UpdateStat);
 		Stat->OnHpChanged.AddUObject(InHUDWidget, &UDBHUDWidget::UpdateHpBar);
+
+		OnUpdateEnemyHpBar.AddUObject(InHUDWidget, &UDBHUDWidget::UpdateBossHpBar);
 	}
 }
 

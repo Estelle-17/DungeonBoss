@@ -4,6 +4,20 @@
 #include "Animation/Boss/ArmoredBoss/AnimNotifyState_SwordHitCheck.h"
 #include "Interface/DBArmoredBossAttackInterface.h"
 
+void UAnimNotifyState_SwordHitCheck::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
+{
+	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
+	if (MeshComp)
+	{
+		IDBArmoredBossAttackInterface* EnemyPawn = Cast<IDBArmoredBossAttackInterface>(MeshComp->GetOwner());
+
+		if (EnemyPawn)
+		{
+			EnemyPawn->SwordAttackBegin();
+		}
+	}
+}
+
 void UAnimNotifyState_SwordHitCheck::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyTick(MeshComp, Animation, FrameDeltaTime, EventReference);
@@ -27,7 +41,7 @@ void UAnimNotifyState_SwordHitCheck::NotifyEnd(USkeletalMeshComponent* MeshComp,
 
 		if (EnemyPawn)
 		{
-			EnemyPawn->ResetHitPlayers();
+			EnemyPawn->SwordAttackEnd();
 		}
 	}
 }

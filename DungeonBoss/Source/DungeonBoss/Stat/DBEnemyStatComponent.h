@@ -38,6 +38,7 @@ public:
 	FORCEINLINE FDBEnemyStat GetTotalStat() const { return BaseStat + ModifierStat; }
 	FORCEINLINE float GetCurrentHp() const { return CurrentHp; }
 	FORCEINLINE void HealHp(float HealAmount) { CurrentHp = FMath::Clamp(CurrentHp + HealAmount, 0, GetTotalStat().MaxHp); OnHpChanged.Broadcast(CurrentHp); }
+	FORCEINLINE void ResetHp() { CurrentHp = GetTotalStat().MaxHp; }
 	float ApplyDamage(float InDamage);
 
 protected:

@@ -22,6 +22,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	class UDBEnemyStatComponent* Stat;
 
+//Functions
+protected:
+	void DeadSetting();
+
 //Component Section
 protected:
 	// Called when the game starts or when spawned
@@ -70,6 +74,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Animation)
 	TObjectPtr<class UAnimMontage> WeaponComboAttackActionMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Animation)
+	TObjectPtr<class UAnimMontage> CounterActionMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Animation)
+	TObjectPtr<class UAnimMontage> DeadActionMontage;
+
+	uint8 bIsCounterState;
+
 //Functions
 protected:
 	void PlayAttackAction(FString NewName);
@@ -79,11 +91,16 @@ protected:
 	void PlayTurnAttackAction();
 	void PlayTurnToTargetAction();
 	void PlayWeaponComboAttackAction();
+	void PlayCounterAction();
+	void PlayCounterAttackAction();
 
 	void PlayJumpAttackAction();
+	
+	void PlayDeadAction();
 
 	void AttackActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded);
 	void TurnActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded);
+	void DeadActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded);
 
 //MotionWarping Section
 //Variables
@@ -113,6 +130,12 @@ protected:
 	virtual void AroundAttackCheck() override;
 	virtual void ForwardAttackCheck() override;
 	virtual void ResetHitPlayers() override;
+	virtual void ReleaseWeapons() override;
+
+	virtual void SwordAttackBegin() override;
+	virtual void SwordAttackEnd() override;
+	virtual void CounterStateBegin() override;
+	virtual void CounterStateEnd() override;
 
 //Attack Section
 protected:
@@ -124,5 +147,4 @@ protected:
 	TObjectPtr<class UDAArmoredBoss_CooltimeData> ArmoredBoss_CooltimeData;
 
 	void AttackHitConfirm(AActor* HitActor);
-
 };

@@ -4,18 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
-#include "AnimNotifyState_SwordHitCheck.generated.h"
+#include "AnimNotifyState_CheckCounter.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class DUNGEONBOSS_API UAnimNotifyState_SwordHitCheck : public UAnimNotifyState
+class DUNGEONBOSS_API UAnimNotifyState_CheckCounter : public UAnimNotifyState
 {
 	GENERATED_BODY()
-	
+
 protected:
 	virtual void NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference);
-	virtual void NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference);
 	virtual void NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference);
 };

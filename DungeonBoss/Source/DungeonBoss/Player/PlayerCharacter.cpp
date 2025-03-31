@@ -16,6 +16,7 @@
 #include "Stat/DBCharacterStatComponent.h"
 #include "DBPlayerItemComponent.h"
 #include "DBInteractionBetweenPlayerAndNPC.h"
+#include "Stat/DBEnemyStatComponent.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -666,6 +667,15 @@ void APlayerCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 		DB_LOG(LogDBNetwork, Log, TEXT("Find Enemy!"));
 
 		float HitCheckTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+
+		//적Hp 체크
+		UDBEnemyStatComponent* EnemyStat = Cast<UDBEnemyStatComponent>(OtherActor->GetComponentByClass(UDBEnemyStatComponent::StaticClass()));
+		if (EnemyStat)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, FString::Printf(TEXT("Check Enemy Hp : %f, %f"), EnemyStat->GetCurrentHp(), EnemyStat->GetTotalStat().MaxHp));
+			//적 이름 설정
+			OnUpdateEnemyHpBar.Broadcast(EnemyStat->GetCurrentHp() / EnemyStat->GetTotalStat().MaxHp, OtherActor->GetFName());
+		}
 
 		if (!HasAuthority())
 		{

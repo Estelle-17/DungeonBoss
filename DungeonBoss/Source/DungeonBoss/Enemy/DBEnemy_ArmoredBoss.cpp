@@ -141,12 +141,28 @@ ADBEnemy_ArmoredBoss::ADBEnemy_ArmoredBoss(const FObjectInitializer& ObjectIniti
 		WeaponComboAttackActionMontage = WeaponComboAttackActionMontageRef.Object;
 	}
 
+	//Counter Action
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> CounterActionMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/Boss/Armored_Boss/AM_DB_ArmoredBoss_CounterAttack.AM_DB_ArmoredBoss_CounterAttack'"));
+	if (CounterActionMontageRef.Object)
+	{
+		CounterActionMontage = CounterActionMontageRef.Object;
+	}
+
+	//Dead Action
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> DeadMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/Boss/Armored_Boss/AM_DB_ArmoredBoss_Dead.AM_DB_ArmoredBoss_Dead'"));
+	if (DeadMontageRef.Object)
+	{
+		DeadActionMontage = DeadMontageRef.Object;
+	}
+
 	//Data Section
 	static ConstructorHelpers::FObjectFinder<UDAArmoredBoss_CooltimeData> ArmoredBoss_CooltimeDataRef(TEXT("/Script/DungeonBoss.DAArmoredBoss_CooltimeData'/Game/GameData/DA_ArmoredBoss_Cooltime.DA_ArmoredBoss_Cooltime'"));
 	if (ArmoredBoss_CooltimeDataRef.Object)
 	{
 		ArmoredBoss_CooltimeData = ArmoredBoss_CooltimeDataRef.Object;
 	}
+
+	bIsCounterState = false;
 }
 
 void ADBEnemy_ArmoredBoss::BeginPlay()
@@ -161,6 +177,11 @@ void ADBEnemy_ArmoredBoss::NotifyComboActionEnd()
 
 void ADBEnemy_ArmoredBoss::NotifyTurnActionEnd()
 {
+}
+
+void ADBEnemy_ArmoredBoss::DeadSetting()
+{
+	Tags.Remove(FName("Enemy"));
 }
 
 void ADBEnemy_ArmoredBoss::PlayAttackAction(FString NewName)
@@ -185,6 +206,10 @@ void ADBEnemy_ArmoredBoss::PlayAttackAction(FString NewName)
 	else if (NewName.Equals("WeaponComboAttack"))
 	{
 		PlayWeaponComboAttackAction();
+	}
+	else if (NewName.Equals("CounterAttack"))
+	{
+		PlayCounterAction();
 	}
 }
 
@@ -234,6 +259,26 @@ void ADBEnemy_ArmoredBoss::PlayWeaponComboAttackAction()
 	FOnMontageEnded EndDelegate;
 	EndDelegate.BindUObject(this, &ADBEnemy_ArmoredBoss::AttackActionEnd);
 	AnimInstance->Montage_SetEndDelegate(EndDelegate, WeaponComboAttackActionMontage);
+}
+
+void ADBEnemy_ArmoredBoss::PlayCounterAction()
+{
+	const float AttackSpeedRate = 1.0f;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_Play(CounterActionMontage, AttackSpeedRate);
+
+	FOnMontageEnded EndDelegate;
+	EndDelegate.BindUObject(this, &ADBEnemy_ArmoredBoss::AttackActionEnd);
+	AnimInstance->Montage_SetEndDelegate(EndDelegate, CounterActionMontage);
+}
+
+void ADBEnemy_ArmoredBoss::PlayCounterAttackAction()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_JumpToSection(TEXT("CounterAttack"), CounterActionMontage);
+
+	bIsCounterState = false;
 }
 
 void ADBEnemy_ArmoredBoss::PlayTurnToTargetAction()
@@ -300,6 +345,23 @@ void ADBEnemy_ArmoredBoss::PlayJumpAttackAction()
 	AnimInstance->Montage_SetEndDelegate(EndDelegate, JumpAttackActionMontage);
 }
 
+void ADBEnemy_ArmoredBoss::PlayDeadAction()
+{
+	DeadSetting();
+	
+	const float AttackSpeedRate = 1.0f;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	AnimInstance->StopAllMontages(0.0f);
+
+	AnimInstance->Montage_Play(DeadActionMontage, AttackSpeedRate);
+
+	FOnMontageEnded EndDelegate;
+	EndDelegate.BindUObject(this, &ADBEnemy_ArmoredBoss::DeadActionEnd);
+	AnimInstance->Montage_SetEndDelegate(EndDelegate, DeadActionMontage);
+}
+
 void ADBEnemy_ArmoredBoss::AttackActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
 	ResetHitPlayers();
@@ -309,6 +371,12 @@ void ADBEnemy_ArmoredBoss::AttackActionEnd(UAnimMontage* TargetMontage, bool IsP
 void ADBEnemy_ArmoredBoss::TurnActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
 	NotifyTurnActionEnd();
+}
+
+void ADBEnemy_ArmoredBoss::DeadActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
+{
+	//플레이어에게 아이템을 준 후
+	//기본 맵으로 돌아가는 포탈 만들기 or 기본 맵으로 자동 이동
 }
 
 void ADBEnemy_ArmoredBoss::CheckTagetLocationBegin()
@@ -365,9 +433,13 @@ void ADBEnemy_ArmoredBoss::ResetMotionWarpingRotation()
 void ADBEnemy_ArmoredBoss::SwordAttackCheck()
 {
 	float AttackRange = 350.0f;
-	float AttackRadius = 20.0f;
+	float AttackRadius = 75.0f;
 
 	FVector ColliderLocation = GetMesh()->GetSocketLocation(TEXT("Bip001-R-Hand"));
+
+	FVector Direction = (WeaponCollision->GetComponentLocation() - WeaponMesh->GetComponentLocation()).GetSafeNormal();
+	FRotator ColliderRotation = WeaponMesh->GetComponentRotation();
+	ColliderRotation = ColliderRotation + FRotator(0.0f, 0.0f, 90.0f);
 
 	TArray<FHitResult> HitResults;
 	FCollisionQueryParams Params(NAME_None, false, this);
@@ -376,8 +448,8 @@ void ADBEnemy_ArmoredBoss::SwordAttackCheck()
 	(
 		HitResults,
 		ColliderLocation,
-		ColliderLocation + WeaponMesh->GetForwardVector() * AttackRange,
-		WeaponCollision->GetComponentQuat(),
+		ColliderLocation + Direction * AttackRange,
+		ColliderRotation.Quaternion(),
 		ECollisionChannel::ECC_Pawn,
 		FCollisionShape::MakeSphere(AttackRadius),
 		Params
@@ -385,10 +457,10 @@ void ADBEnemy_ArmoredBoss::SwordAttackCheck()
 
 #if ENABLE_DRAW_DEBUG
 
-	FVector TraceVec = WeaponMesh->GetForwardVector() * AttackRange;
+	FVector TraceVec = Direction * AttackRange;
 	FVector Center = ColliderLocation + TraceVec * 0.5f;
 	float HalfHeight = AttackRange * 0.5f + AttackRadius;
-	FQuat CapsuleRot = WeaponCollision->GetComponentQuat();
+	FQuat CapsuleRot = ColliderRotation.Quaternion();
 	FColor DrawColor = bResult ? FColor::Green : FColor::Red;
 	float DebugLifeTime = 3.0f;
 
@@ -423,8 +495,8 @@ void ADBEnemy_ArmoredBoss::SwordAttackCheck()
 
 void ADBEnemy_ArmoredBoss::ShieldAttackCheck()
 {
-	float AttackRange = 200.0f;
-	float AttackRadius = 75.0f;
+	float AttackRange = 225.0f;
+	float AttackRadius = 100.0f;
 
 	FVector ColliderLocation = GetMesh()->GetSocketLocation(TEXT("Bip001-L-Hand"));
 	FQuat ColliderQuat = ShieldCollision->GetComponentQuat();
@@ -607,6 +679,34 @@ void ADBEnemy_ArmoredBoss::ForwardAttackCheck()
 void ADBEnemy_ArmoredBoss::ResetHitPlayers()
 {
 	HitPlayers.Empty();
+}
+
+void ADBEnemy_ArmoredBoss::ReleaseWeapons()
+{
+	FDetachmentTransformRules DetachRule(EDetachmentRule::KeepWorld, true);
+	WeaponMesh->DetachFromComponent(DetachRule);
+	ShieldMesh->DetachFromComponent(DetachRule);
+}
+
+void ADBEnemy_ArmoredBoss::SwordAttackBegin()
+{
+	WeaponCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+
+void ADBEnemy_ArmoredBoss::SwordAttackEnd()
+{
+	WeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HitPlayers.Empty();
+}
+
+void ADBEnemy_ArmoredBoss::CounterStateBegin()
+{
+	bIsCounterState = true;
+}
+
+void ADBEnemy_ArmoredBoss::CounterStateEnd()
+{
+	bIsCounterState = false;
 }
 
 void ADBEnemy_ArmoredBoss::AttackHitConfirm(AActor* HitActor)
