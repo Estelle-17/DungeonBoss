@@ -20,10 +20,11 @@ public:
 	
 protected:
 	class ADBNPCBaseActor* NPCActor;
+	class ADBPlayerBase* TargetPlayer;
 	
 public:
 	void InteractionNPC();
-	void PlayerSearchOverlapSetting(ADBPlayerBase* PlayerBase);
+	void PlayerSearchOverlapSetting(ADBPlayerBase* NewPlayerBase);
 
 	UFUNCTION()
 	void OnSearchOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

@@ -37,7 +37,7 @@ bool UBTDecorator_AttackInLongRange::CalculateRawConditionValue(UBehaviorTreeCom
 	//Target-Enemy의 거리 계산
 	float DistanceToTaget = ControllingPawn->GetDistanceTo(Target);
 	float AttackRangeWithRadius = AIPawn->GetAIAttackRange() * 3;
-	GEngine->AddOnScreenDebugMessage(-1, 7.0f, FColor::Green, FString::Printf(TEXT("DistanceToTaget : %f, AttackRange : %f"), DistanceToTaget, AttackRangeWithRadius));
+	//GEngine->AddOnScreenDebugMessage(-1, 7.0f, FColor::Green, FString::Printf(TEXT("DistanceToTaget : %f, AttackRange : %f"), DistanceToTaget, AttackRangeWithRadius));
 	bResult = ((AttackRangeWithRadius * 0.5) <= DistanceToTaget) && (DistanceToTaget <= AttackRangeWithRadius);
 	return bResult;
 }

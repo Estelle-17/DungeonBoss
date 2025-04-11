@@ -16,4 +16,6 @@ UDBEnemyMovementComponent::UDBEnemyMovementComponent()
 	MaxWalkSpeed = 150.0f;
 	BrakingDecelerationWalking = 2000.f;
 	bRequestedMoveUseAcceleration = true;
+	//외부의 물리 반응 끄기
+	bEnablePhysicsInteraction = false;
 }

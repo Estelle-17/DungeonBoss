@@ -13,6 +13,8 @@
 #include "DBPlayerBase.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnUpdateEnemyHpBar, float /*EnemyHpPercnet*/, FName /*EnemyName*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnUpdatePlayerDescription, FString /*NewDescription*/);
+DECLARE_MULTICAST_DELEGATE(FOnDisablePlayerDescription);
 
 UCLASS()
 class DUNGEONBOSS_API ADBPlayerBase : public ACharacter, public IDBAnimationNotifyInterface, public IDBAnimationAttackInterface,
@@ -71,14 +73,22 @@ protected:
 	TObjectPtr<class UDBPlayerItemComponent> Inventory;
 
 //UI Section
+//Variables
+public:
+	FOnUpdatePlayerDescription OnUpdatePlayerDescription;
+	FOnDisablePlayerDescription OnDisablePlayerDescription;
+
+//Functions
 protected:
 	virtual void SetupHUDWidget(class UDBHUDWidget* InHUDWidget) override;
 	virtual void SetupInventoryWidget(class UDBInventoryWidget* InInventoryWidget) override;
-	
+
 //UI Widget Section
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Widget, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UWidgetComponent> HpBar;
+
+	class UDBEnemyHpBarWidget* EnemyHpBar;
 
 //IDBAnimationAttackInterface Section
 protected:
@@ -92,6 +102,8 @@ protected:
 	virtual void DisableGuardTime() override;
 	virtual void AnimationOutEnable() override;
 	virtual void AnimationOutDisable() override;
+	virtual void DamageImmunityEnable() override;
+	virtual void DamageImmunityDisable() override;
 
 //IDBMotionWarpingInterface Section
 protected:
@@ -103,6 +115,10 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = InteractionBetweenPlayerAndNPC)
 	TObjectPtr<class UDBInteractionBetweenPlayerAndNPC> DBInteractionBetweenPlayerAndNPC;
+
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = StageMoveActor)
+	class ADBStageMoveActor* DBStageMoveActor;
 
 //Collider Section
 public:
@@ -170,10 +186,14 @@ protected:
 
 	void ProcessGuardCommand();
 	void GuardActionBegin();
+	void SuccessGuard(AActor* NewTarget);
+	void CounterAttackAction();
 
 	float GuardTime = 0.0f;
 	float LastGuardStartTime = 0.0f;
 	float GuardTimeDifference = 0.0f;
+	float LastCounterAttackStartTime = 0.0f;
+	float GuardAttackTimeDifference = 0.0f;
 	
 public:
 	uint8 bIsGuard : 1;
@@ -241,10 +261,39 @@ protected:
 public:
 	void ChargeAttackActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
 
+//Hit Damage Section
+protected:
+	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Animation)
+	TObjectPtr<class UAnimMontage> DamageReceiveActionMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Animation)
+	TObjectPtr<class UAnimMontage> DamageReceiveDownActionMontage;
+
+	FTimerHandle DamageReceiveTimerHandle;
+
+	float LastDamageReceiveStartTime = 0.0f;
+	float DamageReceiveTimeDifference = 0.0f;
+	float RecentlyDamageReceiveCheckTime = 5.0f;
+
+	uint8 bIsPlayingDamageReceiveAction = 0;
+	uint8 bRecentlyDamageReceive = 0;
+
+protected:
+	void ProcessDamageReceiveCommand(AActor* NewTarget);
+	void DamageReceiveActionBegin(AActor* NewTarget);
+	void DamageReceiveDownActionBegin(AActor* NewTarget);
+	void SetDamageReceiveCheckTimer();
+	void DamageReceiveTimeEnd();
+
+public:
+	void DamageReceiveActionEnd(class UAnimMontage* TargetMontage, bool IsProperlyEnded);
+
 //Attack Section
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Equipment, Meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USkeletalMeshComponent> Weapon;
+
+	uint8 bIsDamageImmunity;
 
 protected:
 	TArray<AActor*> HitEnemies;

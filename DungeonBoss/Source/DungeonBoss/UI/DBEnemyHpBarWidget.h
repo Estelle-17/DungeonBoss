@@ -22,7 +22,8 @@ protected:
 
 public:
 	FORCEINLINE void SetMaxHp(float NewMaxHp) { MaxHp = NewMaxHp; }
-	void UpdateHpBar(float NewCurrentHp, FName NewName);
+	void UpdateHpBar(float NewCurrentHp);
+	void UpdateHpBar(float NewHpPercent, FName NewName);
 
 protected:
 	UPROPERTY()

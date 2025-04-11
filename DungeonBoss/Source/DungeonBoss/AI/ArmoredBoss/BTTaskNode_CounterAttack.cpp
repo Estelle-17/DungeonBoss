@@ -35,6 +35,6 @@ EBTNodeResult::Type UBTTaskNode_CounterAttack::ExecuteTask(UBehaviorTreeComponen
 	);
 
 	AIPawn->SetAIAttackDelegate(OnAttackFinished);
-	AIPawn->AttackByAI("CounterAttack");
+	AIPawn->AttackByAI("CounterPose");
 	return EBTNodeResult::InProgress;
 }

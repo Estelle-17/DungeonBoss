@@ -17,6 +17,8 @@
 #include "DBPlayerItemComponent.h"
 #include "DBInteractionBetweenPlayerAndNPC.h"
 #include "Stat/DBEnemyStatComponent.h"
+#include "GM/DBStageMoveActor.h"
+#include "UI/DBEnemyHpBarWidget.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -66,6 +68,7 @@ APlayerCharacter::APlayerCharacter()
 	if (HasAuthority() || IsLocallyControlled())
 	{
 		WeaponCollision->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OnOverlapBegin);
+		WeaponCollision->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Overlap);
 	}
 }
 
@@ -235,6 +238,15 @@ void APlayerCharacter::EndCharge()
 
 void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 {
+	if (bIsGuard && bCanCounterAttack && !bIsDodge && !bIsChargeAttack)
+	{
+		if (!HasAuthority())
+		{
+			CounterAttackAction();
+		}
+		ServerRPCCounterAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
+	}
+
 	if (!bIsGuard && !bIsDodge && !bIsChargeAttack || bCanAnimationOut)
 	{
 		if (!HasAuthority())
@@ -311,12 +323,18 @@ void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)
 
 void APlayerCharacter::PlayerInteractionAction(const FInputActionValue& Value)
 {
+	if (DBStageMoveActor)
+	{
+		DBStageMoveActor->MoveFieldWidgetOn();
+		return;
+	}
+
 	DBInteractionBetweenPlayerAndNPC->InteractionNPC();
 }
 
 void APlayerCharacter::AttackHitCheck()
 {
-	if (IsLocallyControlled())
+	/*if (IsLocallyControlled())
 	{
 		FHitResult OutHitResult;
 
@@ -347,7 +365,7 @@ void APlayerCharacter::AttackHitCheck()
 				AttackHitConfirm(OutHitResult.GetActor());
 			}
 		}
-	}
+	}*/
 }
 
 void APlayerCharacter::AttackHitConfirm(AActor* HitActor)
@@ -355,8 +373,37 @@ void APlayerCharacter::AttackHitConfirm(AActor* HitActor)
 	if (HasAuthority())
 	{
 		const float AttackDamage = Stat->GetTotalStat().Attack;
+
+		GEngine->AddOnScreenDebugMessage(-1, 7.0f, FColor::Green, FString::Printf(TEXT("Hit Damage : %d"), AttackDamage));
+
 		FDamageEvent DamageEvent;
 		HitActor->TakeDamage(AttackDamage, DamageEvent, GetController(), this);
+	}
+}
+
+void APlayerCharacter::UpdateEnemyHpBar(AActor* EnemyActor)
+{
+	//적Hp 체크
+	UDBEnemyStatComponent* EnemyStat = Cast<UDBEnemyStatComponent>(EnemyActor->GetComponentByClass(UDBEnemyStatComponent::StaticClass()));
+	if (EnemyStat)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, FString::Printf(TEXT("Check Enemy Hp : %f, %f"), EnemyStat->GetCurrentHp(), EnemyStat->GetTotalStat().MaxHp));
+
+		if (EnemyHpBar)
+		{
+			EnemyHpBar->SetVisibility(ESlateVisibility::Visible);
+			EnemyHpBar->SetMaxHp(EnemyStat->GetTotalStat().MaxHp);
+		}
+
+		//몬스터를 한번 때릴 때 한번 등록하고 이후 연속해서 등록하지 않도록 설정해야함
+		if (EnemyStat->RegisteredObjects.Contains(this))
+		{
+			EnemyStat->OnHpChanged.AddUObject(EnemyHpBar, &UDBEnemyHpBarWidget::UpdateHpBar);
+			EnemyStat->RegisteredObjects.Add(this);
+		}
+
+		//적 이름 설정
+		OnUpdateEnemyHpBar.Broadcast(EnemyStat->GetCurrentHp() / EnemyStat->GetTotalStat().MaxHp, EnemyActor->GetFName());
 	}
 }
 
@@ -381,6 +428,12 @@ bool APlayerCharacter::ServerRPCGuard_Validate(float GuardStartTime)
 {
 	return true;
 }
+
+bool APlayerCharacter::ServerRPCCounterAttack_Validate(float AttackStartTime)
+{
+	return true;
+}
+
 bool APlayerCharacter::ServerRPCDodge_Validate(float DodgeStartTime)
 {
 	return true;
@@ -402,7 +455,7 @@ bool APlayerCharacter::ServerRPCEndCharge_Validate()
 	return true;
 }
 
-bool APlayerCharacter::ServerRPCNotifyHit_Validate(const FHitResult& HitResult, float HitCheckTime)
+bool APlayerCharacter::ServerRPCNotifyHit_Validate(AActor* OtherActor, FVector HitLocation)
 {
 	return true;
 }
@@ -480,6 +533,32 @@ void APlayerCharacter::ServerRPCGuard_Implementation(float GuardStartTime)
 				if (OtherPlayer)
 				{
 					OtherPlayer->ClientRPCProcessGuard(this);
+				}
+			}
+		}
+	}
+}
+
+void APlayerCharacter::ServerRPCCounterAttack_Implementation(float AttackStartTime)
+{
+	GuardAttackTimeDifference = GetWorld()->GetTimeSeconds() - AttackStartTime;
+	DB_LOG(LogDBNetwork, Log, TEXT("LagTime : %f"), GuardAttackTimeDifference);
+
+	CounterAttackAction();
+
+	LastCounterAttackStartTime = AttackStartTime;
+
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (PlayerController && GetController() != PlayerController)
+		{
+			if (!PlayerController->IsLocalController())
+			{
+				APlayerCharacter* OtherPlayer = Cast<APlayerCharacter>(PlayerController->GetPawn());
+
+				if (OtherPlayer)
+				{
+					OtherPlayer->ClientRPCProcessCounterAttack(this);
 				}
 			}
 		}
@@ -584,6 +663,15 @@ void APlayerCharacter::ClientRPCProcessGuard_Implementation(APlayerCharacter* Ch
 	}
 }
 
+
+void APlayerCharacter::ClientRPCProcessCounterAttack_Implementation(APlayerCharacter* CharacterToPlay)
+{
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->CounterAttackAction();
+	}
+}
+
 void APlayerCharacter::ClientRPCProcessDodge_Implementation(APlayerCharacter* CharacterToPlay)
 {
 	if (CharacterToPlay)
@@ -608,6 +696,14 @@ void APlayerCharacter::ClientRPCEndCharge_Implementation(APlayerCharacter* Chara
 	}
 }
 
+void APlayerCharacter::ClientRPCUpdateEnemyHpBar_Implementation(APlayerCharacter* CharacterToPlay, AActor* EnemyActor)
+{
+	if (CharacterToPlay)
+	{
+		CharacterToPlay->UpdateEnemyHpBar(EnemyActor);
+	}
+}
+
 void APlayerCharacter::MulticastRPCAttack_Implementation()
 {
 
@@ -626,22 +722,40 @@ void APlayerCharacter::MulticastRPCChargeAttack_Implementation()
 {
 }
 
-void APlayerCharacter::ServerRPCNotifyHit_Implementation(const FHitResult& HitResult, float HitCheckTime)
+void APlayerCharacter::ServerRPCNotifyHit_Implementation(AActor* OtherActor, FVector HitLocation)
 {
-	AActor* HitActor = HitResult.GetActor();
+	AActor* HitActor = OtherActor;
 
 	DB_LOG(LogDBNetwork, Log, TEXT("%s"), *HitActor->GetName());
 
 	if (::IsValid(HitActor))
 	{
-		const FVector HitLocation = HitResult.Location;
-		const FBox HitBox = HitActor->GetComponentsBoundingBox();
-		const FVector ActorBoxCenter = (HitBox.Min + HitBox.Max) * 0.5f;
+		const FVector HitActorLocation = HitActor->GetActorLocation();
 
-		if (FVector::DistSquared(HitLocation, ActorBoxCenter) <= AcceptCheckDistance * AcceptCheckDistance)
+/*		UE_LOG(LogTemp, Log, TEXT("Check Hit Vector : %s * %s"), *HitLocation.ToString(), *HitActorLocation.ToString());
+
+		UE_LOG(LogTemp, Log, TEXT("Check Vector : %f <= %f"), FVector::DistSquared(HitLocation, HitActorLocation), AcceptCheckDistance * AcceptCheckDistance);*/
+
+		if (FVector::DistSquared(HitLocation, HitActorLocation) <= AcceptCheckDistance * AcceptCheckDistance)
 		{
-			HitEnemies.Emplace(HitActor);
 			AttackHitConfirm(HitActor);
+
+			for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+			{
+				if (PlayerController && GetController() != PlayerController)
+				{
+					if (!PlayerController->IsLocalController())
+					{
+						APlayerCharacter* OtherPlayer = Cast<APlayerCharacter>(PlayerController->GetPawn());
+
+						if (OtherPlayer)
+						{
+							OtherPlayer->ClientRPCUpdateEnemyHpBar(this, OtherActor);
+						}
+					}
+				}
+			}
+			UpdateEnemyHpBar(OtherActor);
 		}
 		else
 		{
@@ -658,8 +772,6 @@ void APlayerCharacter::ServerRPCNotifyMiss_Implementation(FVector_NetQuantize Tr
 
 #pragma region Collision
 
-
-
 void APlayerCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor->Tags.Contains(FName(TEXT("Enemy"))) && !HitEnemies.Contains(OtherActor) && IsLocallyControlled())
@@ -668,23 +780,16 @@ void APlayerCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 
 		float HitCheckTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 
-		//적Hp 체크
-		UDBEnemyStatComponent* EnemyStat = Cast<UDBEnemyStatComponent>(OtherActor->GetComponentByClass(UDBEnemyStatComponent::StaticClass()));
-		if (EnemyStat)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, FString::Printf(TEXT("Check Enemy Hp : %f, %f"), EnemyStat->GetCurrentHp(), EnemyStat->GetTotalStat().MaxHp));
-			//적 이름 설정
-			OnUpdateEnemyHpBar.Broadcast(EnemyStat->GetCurrentHp() / EnemyStat->GetTotalStat().MaxHp, OtherActor->GetFName());
-		}
-
 		if (!HasAuthority())
 		{
-			ServerRPCNotifyHit(SweepResult, HitCheckTime);
+			HitEnemies.Emplace(OtherActor);
+			ServerRPCNotifyHit(OtherActor, GetActorLocation());
 		}
 		else
 		{
 			HitEnemies.Emplace(OtherActor);
-			AttackHitConfirm(SweepResult.GetActor());
+			AttackHitConfirm(OtherActor);
+			UpdateEnemyHpBar(OtherActor);
 		}
 	}
 }

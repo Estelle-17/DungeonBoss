@@ -39,7 +39,7 @@ protected:
 
 	virtual void SetAIAttackDelegate(const FAIEnemyAttackFinished& InOnAttackFinished) override;
 	virtual void SetAITurnToTargetDelegate(const FAIEnemyAttackFinished& InOnTurnToTargetFinished) override;
-	virtual void AttackByAI(FString SkillName) override;
+	virtual void AttackByAI(FString NewAttack) override;
 	virtual void TurnToTargetByAI() override;
 
 //Damage Section

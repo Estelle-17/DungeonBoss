@@ -21,6 +21,16 @@ void UDBEnemyHpBarWidget::NativeConstruct()
 	ensure(BossNameText);
 }
 
+void UDBEnemyHpBarWidget::UpdateHpBar(float NewCurrentHp)
+{
+	ensure(MaxHp > 0.0f);
+
+	if (HpProgressBar)
+	{
+		HpProgressBar->SetPercent(NewCurrentHp / MaxHp);
+	}
+}
+
 void UDBEnemyHpBarWidget::UpdateHpBar(float NewHpPercent, FName NewName)
 {
 	ensure(MaxHp > 0.0f);

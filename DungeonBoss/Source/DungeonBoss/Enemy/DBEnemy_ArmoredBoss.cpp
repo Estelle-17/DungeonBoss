@@ -15,6 +15,7 @@
 #include "MotionWarpingComponent.h"
 #include "GameData/DAArmoredBoss_CooltimeData.h"
 #include "Engine/DamageEvents.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 ADBEnemy_ArmoredBoss::ADBEnemy_ArmoredBoss(const FObjectInitializer& ObjectInitializer)
@@ -23,6 +24,8 @@ ADBEnemy_ArmoredBoss::ADBEnemy_ArmoredBoss(const FObjectInitializer& ObjectIniti
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = 0.05f;
+
+	bReplicates = true;
 
 	GetCapsuleComponent()->InitCapsuleSize(50.0f, 200.0f);
 	
@@ -163,16 +166,21 @@ ADBEnemy_ArmoredBoss::ADBEnemy_ArmoredBoss(const FObjectInitializer& ObjectIniti
 	}
 
 	bIsCounterState = false;
+
+	CurentAnimationState = EAnimationState::None;
 }
 
 void ADBEnemy_ArmoredBoss::BeginPlay()
 {
 	Super::BeginPlay();
+
+	//RootMotionMode 변경
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->SetRootMotionMode(ERootMotionMode::RootMotionFromMontagesOnly);
 }
 
 void ADBEnemy_ArmoredBoss::NotifyComboActionEnd()
 {
-	
 }
 
 void ADBEnemy_ArmoredBoss::NotifyTurnActionEnd()
@@ -182,34 +190,81 @@ void ADBEnemy_ArmoredBoss::NotifyTurnActionEnd()
 void ADBEnemy_ArmoredBoss::DeadSetting()
 {
 	Tags.Remove(FName("Enemy"));
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("DeadState"));
 }
 
-void ADBEnemy_ArmoredBoss::PlayAttackAction(FString NewName)
+void ADBEnemy_ArmoredBoss::SetAnimationState(EAnimationState NewState)
+{
+	if (HasAuthority())
+	{
+		CurentAnimationState = NewState;
+	}
+}
+
+void ADBEnemy_ArmoredBoss::PlayAttackAction(EAnimationState NewState)
 {
 	//입력된 값에 맞는 애니메이션 출력
-	if (NewName.Equals("SwordAttack"))
+	switch (NewState)
 	{
-		PlaySwordAttackAction();
+		case EAnimationState::None:
+			break;
+		case EAnimationState::SwordAttack:
+			PlaySwordAttackAction();
+			break;
+		case EAnimationState::ShieldAttack:
+			PlayShieldAttackAction();
+			break;
+		case EAnimationState::JumpAttack:
+			PlayJumpAttackAction();
+			break;
+		case EAnimationState::TurnAttack:
+			PlayTurnAttackAction();
+			break;
+		case EAnimationState::WeaponComboAttack:
+			PlayWeaponComboAttackAction();
+			break;
+		case EAnimationState::CounterPose:
+			PlayCounterAction();
+			break;
+		case EAnimationState::CounterAttack:
+			PlayCounterAttackAction();
+			break;
+		default:
+			break;
 	}
-	else if (NewName.Equals("ShieldAttack"))
+}
+
+void ADBEnemy_ArmoredBoss::OnRep_AnimationState()
+{
+	switch (CurentAnimationState)
 	{
-		PlayShieldAttackAction();
-	}
-	else if (NewName.Equals("JumpAttack"))
-	{
-		PlayJumpAttackAction();
-	}
-	else if (NewName.Equals("TurnAttack"))
-	{
-		PlayTurnAttackAction();
-	}
-	else if (NewName.Equals("WeaponComboAttack"))
-	{
-		PlayWeaponComboAttackAction();
-	}
-	else if (NewName.Equals("CounterAttack"))
-	{
-		PlayCounterAction();
+		case EAnimationState::None:
+			break;
+		case EAnimationState::SwordAttack:
+			PlaySwordAttackAction();
+			break;
+		case EAnimationState::ShieldAttack:
+			PlayShieldAttackAction();
+			break;
+		case EAnimationState::JumpAttack:
+			PlayJumpAttackAction();
+			break;
+		case EAnimationState::TurnAttack:
+			PlayTurnAttackAction();
+			break;
+		case EAnimationState::WeaponComboAttack:
+			PlayWeaponComboAttackAction();
+			break;
+		case EAnimationState::CounterPose:
+			PlayCounterAction();
+			break;
+		case EAnimationState::CounterAttack:
+			PlayCounterAttackAction();
+			break;
+		case EAnimationState::Dead:
+			break;
+		default:
+			break;
 	}
 }
 
@@ -364,6 +419,7 @@ void ADBEnemy_ArmoredBoss::PlayDeadAction()
 
 void ADBEnemy_ArmoredBoss::AttackActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
+	CurentAnimationState = EAnimationState::None;
 	ResetHitPlayers();
 	NotifyComboActionEnd();
 }
@@ -432,7 +488,7 @@ void ADBEnemy_ArmoredBoss::ResetMotionWarpingRotation()
 
 void ADBEnemy_ArmoredBoss::SwordAttackCheck()
 {
-	float AttackRange = 350.0f;
+	float AttackRange = 300.0f;
 	float AttackRadius = 75.0f;
 
 	FVector ColliderLocation = GetMesh()->GetSocketLocation(TEXT("Bip001-R-Hand"));
@@ -480,22 +536,29 @@ void ADBEnemy_ArmoredBoss::SwordAttackCheck()
 
 	if (bResult)
 	{
+		//플레이어의 모든 콜리젼 중 한대만 맞도록 체크
+		CheckHitPlayers.Empty();
+
 		for (FHitResult HitResult : HitResults)
 		{
-			if (HitResult.GetActor()->Tags.Contains(FName(TEXT("Player"))) && !HitPlayers.Contains(HitResult.GetActor()))
+			if (HitResult.GetActor()->Tags.Contains(FName(TEXT("Player"))) && !DamageHitPlayers.Contains(HitResult.GetActor()) && !CheckHitPlayers.Contains(HitResult.GetActor()))
 			{
 				DB_LOG(LogDBNetwork, Log, TEXT("Find Player!"));
 
-				HitPlayers.Emplace(HitResult.GetActor());
+				CheckHitPlayers.Add(HitResult.GetActor());
+
+				DamageHitPlayers.Add(HitResult.GetActor());
 				AttackHitConfirm(HitResult.GetActor());
 			}
 		}
+
+		CheckHitPlayers.Empty();
 	}
 }
 
 void ADBEnemy_ArmoredBoss::ShieldAttackCheck()
 {
-	float AttackRange = 225.0f;
+	float AttackRange = 200.0f;
 	float AttackRadius = 100.0f;
 
 	FVector ColliderLocation = GetMesh()->GetSocketLocation(TEXT("Bip001-L-Hand"));
@@ -541,23 +604,30 @@ void ADBEnemy_ArmoredBoss::ShieldAttackCheck()
 
 	if (bResult)
 	{
+		//플레이어의 모든 콜리젼 중 한대만 맞도록 체크
+		CheckHitPlayers.Empty();
+
 		for (FHitResult HitResult : HitResults)
 		{
-			if (HitResult.GetActor()->Tags.Contains(FName(TEXT("Player"))) && !HitPlayers.Contains(HitResult.GetActor()))
+			if (HitResult.GetActor()->Tags.Contains(FName(TEXT("Player"))) && !DamageHitPlayers.Contains(HitResult.GetActor()) && !CheckHitPlayers.Contains(HitResult.GetActor()))
 			{
 				DB_LOG(LogDBNetwork, Log, TEXT("Find Player!"));
 
-				HitPlayers.Emplace(HitResult.GetActor());
+				CheckHitPlayers.Add(HitResult.GetActor());
+
+				DamageHitPlayers.Add(HitResult.GetActor());
 				AttackHitConfirm(HitResult.GetActor());
 			}
 		}
+
+		CheckHitPlayers.Empty();
 	}
 }
 
 void ADBEnemy_ArmoredBoss::AroundAttackCheck()
 {
 	float AttackRange = 100.0f;
-	float AttackRadius = 450.0f;
+	float AttackRadius = 425.0f;
 
 	FVector ColliderLocation = GetActorLocation();
 	FQuat ColliderQuat = FQuat::Identity;
@@ -601,16 +671,22 @@ void ADBEnemy_ArmoredBoss::AroundAttackCheck()
 
 	if (bResult)
 	{
+		//플레이어의 모든 콜리젼 중 한대만 맞도록 체크
+		CheckHitPlayers.Empty();
+
 		for (FHitResult HitResult : HitResults)
 		{
-			if (HitResult.GetActor()->Tags.Contains(FName(TEXT("Player"))) && !HitPlayers.Contains(HitResult.GetActor()))
+			if (HitResult.GetActor()->Tags.Contains(FName(TEXT("Player"))) && !DamageHitPlayers.Contains(HitResult.GetActor()) && !CheckHitPlayers.Contains(HitResult.GetActor()))
 			{
 				DB_LOG(LogDBNetwork, Log, TEXT("Find Player!"));
 
-				HitPlayers.Emplace(HitResult.GetActor());
+				CheckHitPlayers.Add(HitResult.GetActor());
+
 				AttackHitConfirm(HitResult.GetActor());
 			}
 		}
+
+		CheckHitPlayers.Empty();
 	}
 }
 
@@ -661,16 +737,22 @@ void ADBEnemy_ArmoredBoss::ForwardAttackCheck()
 
 	if (bResult)
 	{
+		//플레이어의 모든 콜리젼 중 한대만 맞도록 체크
+		CheckHitPlayers.Empty();
+
 		for (FHitResult HitResult : HitResults)
 		{
-			if (HitResult.GetActor()->Tags.Contains(FName(TEXT("Player"))) && !HitPlayers.Contains(HitResult.GetActor()))
+			if (HitResult.GetActor()->Tags.Contains(FName(TEXT("Player"))) && !DamageHitPlayers.Contains(HitResult.GetActor()) && !CheckHitPlayers.Contains(HitResult.GetActor()))
 			{
 				DB_LOG(LogDBNetwork, Log, TEXT("Find Player!"));
 
-				HitPlayers.Emplace(HitResult.GetActor());
+				CheckHitPlayers.Add(HitResult.GetActor());
+
 				AttackHitConfirm(HitResult.GetActor());
 			}
 		}
+
+		CheckHitPlayers.Empty();
 	}
 }
 
@@ -678,7 +760,7 @@ void ADBEnemy_ArmoredBoss::ForwardAttackCheck()
 
 void ADBEnemy_ArmoredBoss::ResetHitPlayers()
 {
-	HitPlayers.Empty();
+	DamageHitPlayers.Empty();
 }
 
 void ADBEnemy_ArmoredBoss::ReleaseWeapons()
@@ -696,7 +778,7 @@ void ADBEnemy_ArmoredBoss::SwordAttackBegin()
 void ADBEnemy_ArmoredBoss::SwordAttackEnd()
 {
 	WeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	HitPlayers.Empty();
+	DamageHitPlayers.Empty();
 }
 
 void ADBEnemy_ArmoredBoss::CounterStateBegin()
@@ -713,5 +795,12 @@ void ADBEnemy_ArmoredBoss::AttackHitConfirm(AActor* HitActor)
 {
 	const float AttackDamage = Stat->GetTotalStat().Attack;
 	FDamageEvent DamageEvent;
+
 	HitActor->TakeDamage(AttackDamage, DamageEvent, GetController(), this);
+}
+
+void ADBEnemy_ArmoredBoss::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ADBEnemy_ArmoredBoss, CurentAnimationState);
 }

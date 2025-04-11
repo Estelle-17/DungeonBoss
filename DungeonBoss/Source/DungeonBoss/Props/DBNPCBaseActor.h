@@ -35,6 +35,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = NPC)
 	ENPCType NPCType;
 
+public:
+	ENPCType const GetNPCType() { return NPCType; }
+
 //Timer Section
 //Functions
 public:

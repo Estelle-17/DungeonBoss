@@ -68,6 +68,7 @@ protected:
 
 	void AttackHitCheck();
 	void AttackHitConfirm(AActor* HitActor);
+	void UpdateEnemyHpBar(AActor* EnemyActor);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCUpdateTargetVector(FVector MoveVector);
@@ -79,6 +80,9 @@ protected:
 	void ServerRPCGuard(float GuardStartTime);
 
 	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCCounterAttack(float AttackStartTime);
+
+	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCDodge(float DodgeStartTime);
 
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -88,7 +92,7 @@ protected:
 	void ServerRPCEndCharge();
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRPCNotifyHit(const FHitResult& HitResult, float HitCheckTime);
+	void ServerRPCNotifyHit(AActor* OtherActor, FVector HitLocation);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCNotifyMiss(FVector_NetQuantize TraceStart, FVector_NetQuantize TraceEnd, FVector_NetQuantizeNormal TraceDir, float HitCheckTime);
@@ -103,6 +107,9 @@ protected:
 	void ClientRPCProcessGuard(APlayerCharacter* CharacterToPlay);
 
 	UFUNCTION(Client, Unreliable)
+	void ClientRPCProcessCounterAttack(APlayerCharacter* CharacterToPlay);
+
+	UFUNCTION(Client, Unreliable)
 	void ClientRPCProcessDodge(APlayerCharacter* CharacterToPlay);
 
 	UFUNCTION(Client, Unreliable)
@@ -110,6 +117,9 @@ protected:
 
 	UFUNCTION(Client, Unreliable)
 	void ClientRPCEndCharge(APlayerCharacter* CharacterToPlay);
+
+	UFUNCTION(Client, Unreliable)
+	void ClientRPCUpdateEnemyHpBar(APlayerCharacter* CharacterToPlay, AActor* EnemyActor);
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCAttack();

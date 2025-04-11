@@ -8,6 +8,20 @@
 #include "Interface/DBArmoredBossAttackInterface.h"
 #include "DBEnemy_ArmoredBoss.generated.h"
 
+UENUM(BlueprintType)
+enum class EAnimationState : uint8
+{
+	None = 0 UMETA(DisplayName = "None"),
+	SwordAttack UMETA(DisplayName = "SwordAttack"),
+	ShieldAttack UMETA(DisplayName = "ShieldAttack"),
+	JumpAttack UMETA(DisplayName = "JumpAttack"),
+	TurnAttack UMETA(DisplayName = "TurnAttack"),
+	WeaponComboAttack UMETA(DisplayName = "WeaponComboAttack"),
+	CounterPose UMETA(DisplayName = "CounterPose"),
+	CounterAttack UMETA(DisplayName = "CounterAttack"),
+	Dead UMETA(DisplayName = "Dead")
+};
+
 UCLASS()
 class DUNGEONBOSS_API ADBEnemy_ArmoredBoss : public ACharacter, public IDBEnemyMotionWarpingInterface, public IDBArmoredBossAttackInterface
 {
@@ -16,6 +30,8 @@ class DUNGEONBOSS_API ADBEnemy_ArmoredBoss : public ACharacter, public IDBEnemyM
 public:
 	// Sets default values for this pawn's properties
 	ADBEnemy_ArmoredBoss(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 //Stat Section
 protected:
@@ -52,6 +68,10 @@ protected:
 
 //Montage Section
 //Variables
+public:
+	UPROPERTY(ReplicatedUsing = OnRep_AnimationState)
+	EAnimationState CurentAnimationState;
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintreadWrite, Category = Animation)
 	TObjectPtr<class UAnimMontage> SwordAttackActionMontage;
@@ -83,8 +103,14 @@ protected:
 	uint8 bIsCounterState;
 
 //Functions
+public:
+	UFUNCTION()
+	void OnRep_AnimationState();
+
 protected:
-	void PlayAttackAction(FString NewName);
+	void SetAnimationState(EAnimationState NewState);
+
+	void PlayAttackAction(EAnimationState NewState);
 
 	void PlaySwordAttackAction();
 	void PlayShieldAttackAction();
@@ -139,7 +165,9 @@ protected:
 
 //Attack Section
 protected:
-	TArray<AActor*> HitPlayers;
+	TArray<AActor*> DamageHitPlayers;
+
+	TArray<AActor*> CheckHitPlayers;
 
 //Functions
 protected:

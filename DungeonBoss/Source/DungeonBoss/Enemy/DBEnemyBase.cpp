@@ -53,7 +53,7 @@ void ADBEnemyBase::BeginPlay()
 		}
 
 		Stat->SetBaseStat(EnemyStatDataTable);
-		//Stat->ResetHp();
+		Stat->ResetHp();
 
 		ADBAIController* AIController = Cast<ADBAIController>(GetController());
 		if (AIController)
@@ -67,7 +67,7 @@ void ADBEnemyBase::BeginPlay()
 
 void ADBEnemyBase::Tick(float DeltaTime)
 {
-	if (bCheckMotionWarping)
+	if (bCheckMotionWarping && HasAuthority())
 	{
 		UpdateMotionWarpingRotation(TargetPawn->GetActorLocation());
 	}
@@ -79,7 +79,9 @@ float ADBEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 
 	if(bIsCounterState)
 	{ 
-		PlayCounterAttackAction();
+		EAnimationState NewState = EAnimationState::CounterAttack;
+		SetAnimationState(NewState);
+		PlayAttackAction(NewState);
 
 		return DamageAmount;
 	}
@@ -91,13 +93,13 @@ float ADBEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 
 void ADBEnemyBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	DB_LOG(LogDBNetwork, Log, TEXT("Check Player : %s"), *OtherActor->GetFName().ToString());
+	//DB_LOG(LogDBNetwork, Log, TEXT("Check Player : %s"), *OtherActor->GetFName().ToString());
 
-	if (OtherActor->Tags.Contains(FName(TEXT("Player"))) && !HitPlayers.Contains(OtherActor))
+	if (OtherActor->Tags.Contains(FName(TEXT("Player"))) && !DamageHitPlayers.Contains(OtherActor))
 	{
 		DB_LOG(LogDBNetwork, Log, TEXT("Find Player!"));
 
-		HitPlayers.Emplace(OtherActor);
+		DamageHitPlayers.Emplace(OtherActor);
 		AttackHitConfirm(OtherActor);
 	}
 }
@@ -127,9 +129,24 @@ void ADBEnemyBase::SetAITurnToTargetDelegate(const FAIEnemyAttackFinished& InOnT
 	OnTurnToTargetFinished = InOnTurnToTargetFinished;
 }
 
-void ADBEnemyBase::AttackByAI(FString SkillName)
+void ADBEnemyBase::AttackByAI(FString NewAttack)
 {
-	PlayAttackAction(SkillName);
+	if (HasAuthority())
+	{
+		UEnum* EnumPtr = StaticEnum<EAnimationState>();
+		if (EnumPtr)
+		{
+			int32 EnumIndex = EnumPtr->GetValueByName(FName(NewAttack));
+
+			if (EnumIndex != INDEX_NONE)
+			{
+				EAnimationState NewState = (EAnimationState)EnumPtr->GetValueByIndex(EnumIndex);
+
+				SetAnimationState(NewState);
+				PlayAttackAction(NewState);
+			}
+		}
+	}
 }
 
 void ADBEnemyBase::TurnToTargetByAI()

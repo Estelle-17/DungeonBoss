@@ -27,4 +27,6 @@ public:
 	virtual void DisableGuardTime() = 0;
 	virtual void AnimationOutEnable() = 0;
 	virtual void AnimationOutDisable() = 0;
+	virtual void DamageImmunityEnable() = 0;
+	virtual void DamageImmunityDisable() = 0;
 };

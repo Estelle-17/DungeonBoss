@@ -60,4 +60,8 @@ protected:
 
 	UFUNCTION()
 	void OnRep_CurrentHp();
+
+//Check DelegateObjects
+public:
+	TSet<UObject*> RegisteredObjects;
 };

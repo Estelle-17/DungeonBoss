@@ -133,6 +133,19 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 		ChargeAttackActionData = ChargeAttackActionDataRef.Object;
 	}
 
+	//DamageReceive Action
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> DamageReceiveActionMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/AM_PlayerDamageReceive.AM_PlayerDamageReceive'"));
+	if (DamageReceiveActionMontageRef.Object)
+	{
+		DamageReceiveActionMontage = DamageReceiveActionMontageRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> DamageReceiveDownActionMontageRef(TEXT("/Script/Engine.AnimMontage'/Game/Animation/AM_PlayerDamageReceiveDown.AM_PlayerDamageReceiveDown'"));
+	if (DamageReceiveDownActionMontageRef.Object)
+	{
+		DamageReceiveDownActionMontage = DamageReceiveDownActionMontageRef.Object;
+	}
+
 	//Stat Section
 	Stat = CreateDefaultSubobject<UDBCharacterStatComponent>(TEXT("Stat"));
 
@@ -147,7 +160,13 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 	Weapon->SetupAttachment(GetMesh(), TEXT("Bip001-R-Hand"));
 	Weapon->SetRelativeLocation(FVector3d(8.0f, 0.0f, 2.0f));
 	Weapon->SetRelativeRotation(FRotator(0.0f, 90.0f, -90.0f));
-	Weapon->SetCollisionProfileName(TEXT("Pawn"));
+	Weapon->SetCollisionProfileName(TEXT("NoCollision"));
+
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> WeaponMeshRef(TEXT("/Script/Engine.SkeletalMesh'/Game/Prefab/Player/greatsword.greatsword'"));
+	if (WeaponMeshRef.Object)
+	{
+		Weapon->SetSkeletalMesh(WeaponMeshRef.Object);
+	}
 
 	//Collision Section
 	WeaponCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("WeaponCollision"));
@@ -169,6 +188,9 @@ ADBPlayerBase::ADBPlayerBase(const FObjectInitializer& ObjectInitializer)
 	{
 		DBInteractionBetweenPlayerAndNPC = CreateDefaultSubobject<UDBInteractionBetweenPlayerAndNPC>(TEXT("InteractionBetweenPlayerAndNPC"));
 	}
+
+	bIsDamageImmunity = false;
+	bRecentlyDamageReceive = false;
 }
 
 // Called when the game starts or when spawned
@@ -188,6 +210,10 @@ void ADBPlayerBase::BeginPlay()
 	{
 		DBInteractionBetweenPlayerAndNPC->PlayerSearchOverlapSetting(this);
 	}
+
+	//RootMotionMode 변경
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->SetRootMotionMode(ERootMotionMode::RootMotionFromMontagesOnly);
 }
 
 // Called every frame
@@ -365,6 +391,38 @@ void ADBPlayerBase::GuardActionBegin()
 	bCanCounterAttack = false;
 }
 
+void ADBPlayerBase::SuccessGuard(AActor* NewTarget)
+{
+	const float AttackSpeedRate = 1.0f;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_JumpToSection(TEXT("SuccessGuard"), GuardActionMontage);
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Success Guard : %s From %s"), *GetFName().ToString(), *NewTarget->GetFName().ToString()));
+
+	//때린 적을 바라보고 가드하도록 회전
+	FMotionWarpingTarget EnemyTarget;
+
+	EnemyTarget.Name = "TurnToTarget";
+	EnemyTarget.Location = NewTarget->GetActorLocation();
+
+	MotionWarpingComponent->AddOrUpdateWarpTarget(EnemyTarget);
+
+	bIsGuardState = true;
+	bCanCounterAttack = true;
+}
+
+void ADBPlayerBase::CounterAttackAction()
+{
+	const float AttackSpeedRate = 1.0f;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_JumpToSection(TEXT("CounterAttack"), GuardActionMontage);
+
+	bIsGuardState = false;
+	bCanCounterAttack = false;
+}
+
 void ADBPlayerBase::GuardActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
 	bIsGuard = false;
@@ -536,6 +594,94 @@ void ADBPlayerBase::ChargeAttackActionEnd(UAnimMontage* TargetMontage, bool IsPr
 
 #pragma endregion
 
+#pragma region HitAction
+
+void ADBPlayerBase::ProcessDamageReceiveCommand(AActor* NewTarget)
+{
+	MontageAnimationOut();
+
+	if (bRecentlyDamageReceive)
+	{
+		DamageReceiveDownActionBegin(NewTarget);
+	}
+	else
+	{
+		DamageReceiveActionBegin(NewTarget);
+	}
+}
+
+void ADBPlayerBase::DamageReceiveActionBegin(AActor* NewTarget)
+{
+	const float AttackSpeedRate = 1.0f;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_Play(DamageReceiveActionMontage, AttackSpeedRate);
+
+	FOnMontageEnded EndDelegate;
+	EndDelegate.BindUObject(this, &ADBPlayerBase::DamageReceiveActionEnd);
+	AnimInstance->Montage_SetEndDelegate(EndDelegate, DamageReceiveActionMontage);
+
+	//때린 적을 바라보고 가드하도록 회전
+	FMotionWarpingTarget EnemyTarget;
+
+	EnemyTarget.Name = "TurnToTarget";
+	EnemyTarget.Location = NewTarget->GetActorLocation();
+
+	MotionWarpingComponent->AddOrUpdateWarpTarget(EnemyTarget);
+
+	bRecentlyDamageReceive = true;
+	bIsPlayingDamageReceiveAction = true;
+
+	DamageReceiveTimerHandle.Invalidate();
+	SetDamageReceiveCheckTimer();
+}
+
+void ADBPlayerBase::DamageReceiveDownActionBegin(AActor* NewTarget)
+{
+	const float AttackSpeedRate = 1.0f;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_Play(DamageReceiveDownActionMontage, AttackSpeedRate);
+
+	FOnMontageEnded EndDelegate;
+	EndDelegate.BindUObject(this, &ADBPlayerBase::DamageReceiveActionEnd);
+	AnimInstance->Montage_SetEndDelegate(EndDelegate, DamageReceiveDownActionMontage);
+
+	//때린 적을 바라보고 가드하도록 회전
+	FMotionWarpingTarget EnemyTarget;
+
+	EnemyTarget.Name = "TurnToTarget";
+	EnemyTarget.Location = NewTarget->GetActorLocation();
+
+	MotionWarpingComponent->AddOrUpdateWarpTarget(EnemyTarget);
+
+	bRecentlyDamageReceive = false;
+	bIsPlayingDamageReceiveAction = true;
+
+	DamageReceiveTimerHandle.Invalidate();
+}
+
+void ADBPlayerBase::SetDamageReceiveCheckTimer()
+{
+	const float AttackSpeedRate = 1.0f;
+
+	GetWorld()->GetTimerManager().SetTimer(DamageReceiveTimerHandle, this, &ADBPlayerBase::DamageReceiveTimeEnd, RecentlyDamageReceiveCheckTime, false);
+}
+
+void ADBPlayerBase::DamageReceiveTimeEnd()
+{
+	bRecentlyDamageReceive = false;
+
+	DamageReceiveTimerHandle.Invalidate();
+}
+
+void ADBPlayerBase::DamageReceiveActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
+{
+	bIsPlayingDamageReceiveAction = false;
+}
+
+#pragma endregion
+
 #pragma region MotionWarping
 
 void ADBPlayerBase::SetMotionWarpingRotation(FVector MovementVector)
@@ -584,13 +730,25 @@ void ADBPlayerBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	//DOREPLIFETIME(ADBPlayerBase, bCanAnimationOut);
 }
 
-
-
 float ADBPlayerBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	Stat->ApplyDamage(DamageAmount);
+	if (bIsDamageImmunity)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 7.0f, FColor::Blue, FString::Printf(TEXT("DamageImmunity Time")));
+		return DamageAmount;
+	}
+
+	if (bIsGuardState)
+	{
+		SuccessGuard(DamageCauser);
+	}
+	else
+	{
+		Stat->ApplyDamage(DamageAmount);
+		ProcessDamageReceiveCommand(DamageCauser);
+	}
 
 	return DamageAmount;
 }
@@ -610,6 +768,11 @@ void ADBPlayerBase::SetupHUDWidget(UDBHUDWidget* InHUDWidget)
 		Stat->OnHpChanged.AddUObject(InHUDWidget, &UDBHUDWidget::UpdateHpBar);
 
 		OnUpdateEnemyHpBar.AddUObject(InHUDWidget, &UDBHUDWidget::UpdateBossHpBar);
+		EnemyHpBar = InHUDWidget->GetEnemyHpBarWidget();
+		OnUpdatePlayerDescription.AddUObject(InHUDWidget, &UDBHUDWidget::UpdatePlayerDescription);
+		OnDisablePlayerDescription.AddUObject(InHUDWidget, &UDBHUDWidget::DisablePlayerDescription);
+
+		GEngine->AddOnScreenDebugMessage(-1, 7.0f, FColor::Blue, FString::Printf(TEXT("InHUBWidget Setting Complete!")));
 	}
 }
 
@@ -722,6 +885,16 @@ void ADBPlayerBase::AnimationOutEnable()
 void ADBPlayerBase::AnimationOutDisable()
 {
 	bCanAnimationOut = false;
+}
+
+void ADBPlayerBase::DamageImmunityEnable()
+{
+	bIsDamageImmunity = true;
+}
+
+void ADBPlayerBase::DamageImmunityDisable()
+{
+	bIsDamageImmunity = false;
 }
 
 void ADBPlayerBase::UpdateMotionWarpingTargetVector()

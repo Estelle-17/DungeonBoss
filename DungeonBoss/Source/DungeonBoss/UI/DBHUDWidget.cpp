@@ -3,7 +3,7 @@
 
 #include "UI/DBHUDWidget.h"
 #include "DBHpBarWidget.h"
-#include "DBEnemyHpBarWidget.h"
+#include "DBPlayerInteractionWidget.h"
 #include "Interface/DBCharacterHUDInterface.h"
 
 UDBHUDWidget::UDBHUDWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -27,6 +27,17 @@ void UDBHUDWidget::UpdateBossHpBar(float NewCurrentHp, FName BossName)
 	EnemyHpBar->UpdateHpBar(NewCurrentHp, BossName);
 }
 
+void UDBHUDWidget::UpdatePlayerDescription(FString NewDescription)
+{
+	PlayerInteractDescription->SetVisibility(ESlateVisibility::Visible);
+	PlayerInteractDescription->UpdateDescription(NewDescription);
+}
+
+void UDBHUDWidget::DisablePlayerDescription()
+{
+	PlayerInteractDescription->SetVisibility(ESlateVisibility::Collapsed);
+}
+
 void UDBHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -36,6 +47,11 @@ void UDBHUDWidget::NativeConstruct()
 
 	EnemyHpBar = Cast<UDBEnemyHpBarWidget>(GetWidgetFromName(TEXT("WidgetBossHpBar")));
 	ensure(EnemyHpBar);
+	EnemyHpBar->SetVisibility(ESlateVisibility::Collapsed);
+
+	PlayerInteractDescription = Cast<UDBPlayerInteractionWidget>(GetWidgetFromName(TEXT("PlayerInteractDescription")));
+	ensure(PlayerInteractDescription);
+	PlayerInteractDescription->SetVisibility(ESlateVisibility::Collapsed);
 
 	IDBCharacterHUDInterface* HUDPawn = Cast<IDBCharacterHUDInterface>(GetOwningPlayerPawn());
 	if (HUDPawn)
