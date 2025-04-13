@@ -53,6 +53,7 @@ void ADBEnemyBase::BeginPlay()
 		}
 
 		Stat->SetBaseStat(EnemyStatDataTable);
+		Stat->SetEnemyName(CurrentEnemyType);
 		Stat->ResetHp();
 
 		ADBAIController* AIController = Cast<ADBAIController>(GetController());

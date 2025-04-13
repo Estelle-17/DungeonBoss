@@ -259,6 +259,11 @@ void APlayerCharacter::EndCharge()
 
 void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 {
+	if (bIsPlayingDamageReceiveAction)
+	{
+		return;
+	}
+
 	if (bIsGuard && bCanCounterAttack && !bIsDodge && !bIsChargeAttack && !bIsPlayingDamageReceiveAction)
 	{
 		if (!HasAuthority())
@@ -282,6 +287,11 @@ void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 
 void APlayerCharacter::PlayerChargeAttackEnable(const FInputActionValue& Value)
 {
+	if (bIsPlayingDamageReceiveAction)
+	{
+		return;
+	}
+
 	DB_LOG(LogDBNetwork, Log, TEXT("PlayerChargeStart"));
 	if (!bIsCharging && !bIsChargeAttack && !bIsAttack && !bIsGuard && !bIsDodge && !bIsPlayingDamageReceiveAction || bCanAnimationOut)
 	{
@@ -317,7 +327,7 @@ void APlayerCharacter::PlayerChargeAttackDisable(const FInputActionValue& Value)
 
 void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)
 {
-	if (bIsAttack && bIsChargeAttack && bIsPlayingDamageReceiveAction)
+	if (bIsAttack || bIsChargeAttack || bIsPlayingDamageReceiveAction)
 	{
 		return;
 	}
@@ -424,7 +434,7 @@ void APlayerCharacter::UpdateEnemyHpBar(AActor* EnemyActor)
 		}
 
 		//적 이름 설정
-		OnUpdateEnemyHpBar.Broadcast(EnemyStat->GetCurrentHp() / EnemyStat->GetTotalStat().MaxHp, EnemyActor->GetFName());
+		OnUpdateEnemyHpBar.Broadcast(EnemyStat->GetCurrentHp() / EnemyStat->GetTotalStat().MaxHp, EnemyStat->GetEnemyName());
 	}
 }
 

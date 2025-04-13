@@ -31,11 +31,13 @@ public:
 	FORCEINLINE void AddBaseStat(const FDBEnemyStat& AddBaseStat) { BaseStat = BaseStat + AddBaseStat; OnStatChanged.Broadcast(GetBaseStat(), GetModifierStat()); }
 	FORCEINLINE void SetBaseStat(const FDBEnemyStat& InBaseStat) { BaseStat = InBaseStat; OnStatChanged.Broadcast(GetBaseStat(), GetModifierStat()); }
 	void SetBaseStat(const FDBEnemyStat* InBaseStat);
+	FORCEINLINE void SetEnemyName(FName NewName) { Name = NewName; }
 	FORCEINLINE void SetModifierStat(const FDBEnemyStat& InModifierStat) { ModifierStat = InModifierStat; OnStatChanged.Broadcast(GetBaseStat(), GetModifierStat()); }
 
 	FORCEINLINE const FDBEnemyStat& GetBaseStat() const { return BaseStat; }
 	FORCEINLINE const FDBEnemyStat& GetModifierStat() const { return ModifierStat; }
 	FORCEINLINE FDBEnemyStat GetTotalStat() const { return BaseStat + ModifierStat; }
+	FORCEINLINE FName GetEnemyName() { return Name; }
 	FORCEINLINE float GetCurrentHp() const { return CurrentHp; }
 	FORCEINLINE void HealHp(float HealAmount) { CurrentHp = FMath::Clamp(CurrentHp + HealAmount, 0, GetTotalStat().MaxHp); OnHpChanged.Broadcast(CurrentHp); }
 	FORCEINLINE void ResetHp() { CurrentHp = GetTotalStat().MaxHp; }
@@ -46,6 +48,9 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentHp, Transient, VisibleInstanceOnly, Category = Stat)
 	float CurrentHp;
+
+	UPROPERTY(Transient, VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
+	FName Name;
 
 	UPROPERTY(Transient, VisibleInstanceOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))
 	FDBEnemyStat BaseStat;
