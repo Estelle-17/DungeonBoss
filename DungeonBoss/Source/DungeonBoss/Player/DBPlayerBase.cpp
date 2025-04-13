@@ -222,28 +222,64 @@ void ADBPlayerBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+void ADBPlayerBase::TurnToInputVector(FVector NewInputVector)
+{
+	UE_LOG(LogTemp, Log, TEXT("Check Input Vector : %s"), *NewInputVector.ToString());
+
+	//플레이어 강제 회전
+	SetActorRotation(NewInputVector.Rotation());
+	//AddControllerYawInput(NewInputVector.X);
+	//AddControllerPitchInput(NewInputVector.Y);
+}
+
 void ADBPlayerBase::CheckNextAnimation(int32 CheckNumber)
 {
-	//1 : Attack, 2 : Dodge
+	//다음으로 모션을 진행하기 전 플레이어 애니메이션 및 상태 초기화
+	AllTimerHandlerStop();
+	SetPlayerStateToIdle();
+	bCanAnimationOut = false;
+	MontageAnimationOut();
+
+	//0 : Move, 1 : Attack, 2 : Guard, 3 : Dodge, 4 : ChargeAttack
 	switch (CheckNumber)
 	{
+		case 0:
+			break;
 		case 1:
-			DodgeTimerHandle.Invalidate();
-			bIsDodge = false;
-			bCanAnimationOut = false;
-
 			JumpToComboAction();
 			break;
 		case 2:
-			NextComboTimerHandle.Invalidate();
-			CurrentCombo = 0;
-			bIsAttack = false;
-			bCanAnimationOut = false;
-
-			MontageAnimationOut();
 			ProcessGuardCommand();
 			break;
+		case 3:
+			ProcessDodgeCommand();
+			break;
+		case 4:
+			bIsCharging = true;
+			ProcessChargeAttackCommand();
 	}
+}
+
+void ADBPlayerBase::AllTimerHandlerStop()
+{
+	EnableComboTimerHandle.Invalidate();
+	NextComboTimerHandle.Invalidate();
+	DodgeTimerHandle.Invalidate();
+	ChargeTimerHandle.Invalidate();
+	DamageReceiveTimerHandle.Invalidate();
+}
+
+void ADBPlayerBase::SetPlayerStateToIdle()
+{
+	CurrentCombo = 0;
+	bIsAttack = false;
+	bIsGuard = false;
+	bIsDodge = false;
+	bIsCharging = false;
+	bIsChargeAttack = false;
+	bIsFullCharge = false;
+	bIsPlayingDamageReceiveAction = false;
+	bIsDamageImmunity = false;
 }
 
 void ADBPlayerBase::MontageAnimationOut()
@@ -444,6 +480,8 @@ void ADBPlayerBase::ProcessDodgeCommand()
 
 void ADBPlayerBase::DodgeActionBegin()
 {
+	TurnToInputVector(GetCharacterMovement()->GetLastInputVector());
+
 	const float AttackSpeedRate = 1.0f;
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();

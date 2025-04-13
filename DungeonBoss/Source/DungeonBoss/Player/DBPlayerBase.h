@@ -41,9 +41,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	class UCameraComponent* Camera;
 
-	void CheckNextAnimation(int32 CheckNumber);
-	void MontageAnimationOut();
-
 //MotionWarping Section
 protected:
 	UPROPERTY(EditAnywhere, BlueprintreadWrite, Meta = (AllowPrivateAccess = "true"))
@@ -135,6 +132,13 @@ public:
 //	UFUNCTION()
 //	void OnSearchOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+protected:
+	void TurnToInputVector(FVector NewInputVector);
+
+	void CheckNextAnimation(int32 CheckNumber);
+	void AllTimerHandlerStop();
+	void SetPlayerStateToIdle();
+	void MontageAnimationOut();
 //ComboAttack Section
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

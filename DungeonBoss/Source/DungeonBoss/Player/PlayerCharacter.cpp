@@ -160,6 +160,11 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 void APlayerCharacter::PlayerMove(const FInputActionValue& Value)
 {
+	if (bCanAnimationOut)
+	{
+		CheckNextAnimation(0);
+	}
+
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	float MovementVectorSize = 1.0f;
@@ -171,8 +176,10 @@ void APlayerCharacter::PlayerMove(const FInputActionValue& Value)
 		MovementVector.Normalize();
 	}
 
-	FVector ForwardDirection = FRotationMatrix(GetControlRotation()).GetUnitAxis(EAxis::X);
-	FVector RightDirection = FRotationMatrix(GetControlRotation()).GetUnitAxis(EAxis::Y);
+	FRotator ControlRotation(0, GetControlRotation().Yaw, 0);
+
+	FVector ForwardDirection = FRotationMatrix(ControlRotation).GetUnitAxis(EAxis::X);
+	FVector RightDirection = FRotationMatrix(ControlRotation).GetUnitAxis(EAxis::Y);
 
 	AddMovementInput(ForwardDirection, MovementVector.X);
 	AddMovementInput(RightDirection, MovementVector.Y);
@@ -221,13 +228,27 @@ void APlayerCharacter::PlayGuard()
 
 void APlayerCharacter::PlayDodge()
 {
-	ProcessDodgeCommand();
+	if (bCanAnimationOut)
+	{
+		CheckNextAnimation(3);
+	}
+	else if (!bIsDodge)
+	{
+		ProcessDodgeCommand();
+	}
 }
 
 void APlayerCharacter::StartCharge()
 {
-	bIsCharging = true;
-	ProcessChargeAttackCommand();
+	if (bCanAnimationOut)
+	{
+		CheckNextAnimation(4);
+	}
+	else if (!bIsDodge)
+	{
+		bIsCharging = true;
+		ProcessChargeAttackCommand();
+	}
 }
 
 void APlayerCharacter::EndCharge()
@@ -238,7 +259,7 @@ void APlayerCharacter::EndCharge()
 
 void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 {
-	if (bIsGuard && bCanCounterAttack && !bIsDodge && !bIsChargeAttack)
+	if (bIsGuard && bCanCounterAttack && !bIsDodge && !bIsChargeAttack && !bIsPlayingDamageReceiveAction)
 	{
 		if (!HasAuthority())
 		{
@@ -247,7 +268,7 @@ void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 		ServerRPCCounterAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
 	}
 
-	if (!bIsGuard && !bIsDodge && !bIsChargeAttack || bCanAnimationOut)
+	if (!bIsGuard && !bIsDodge && !bIsChargeAttack && !bIsPlayingDamageReceiveAction || bCanAnimationOut)
 	{
 		if (!HasAuthority())
 		{
@@ -262,7 +283,7 @@ void APlayerCharacter::PlayerAttack(const FInputActionValue& Value)
 void APlayerCharacter::PlayerChargeAttackEnable(const FInputActionValue& Value)
 {
 	DB_LOG(LogDBNetwork, Log, TEXT("PlayerChargeStart"));
-	if (!bIsCharging && !bIsChargeAttack && !bIsAttack && !bIsGuard && !bIsDodge || bCanAnimationOut)
+	if (!bIsCharging && !bIsChargeAttack && !bIsAttack && !bIsGuard && !bIsDodge && !bIsPlayingDamageReceiveAction || bCanAnimationOut)
 	{
 		if (!HasAuthority())
 		{
@@ -296,7 +317,7 @@ void APlayerCharacter::PlayerChargeAttackDisable(const FInputActionValue& Value)
 
 void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)
 {
-	if (bIsAttack)
+	if (bIsAttack && bIsChargeAttack && bIsPlayingDamageReceiveAction)
 	{
 		return;
 	}
@@ -310,7 +331,7 @@ void APlayerCharacter::PlayerGuardOrDodge(const FInputActionValue& Value)
 
 		ServerRPCGuard(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
 	}
-	else if (!bIsGuard && !bIsDodge && !bIsChargeAttack)	//Dodge Section
+	else if (!bIsGuard && !bIsDodge)	//Dodge Section
 	{
 		if (!HasAuthority())
 		{
@@ -780,6 +801,11 @@ void APlayerCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 
 		float HitCheckTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 
+		if (IsLocallyControlled())
+		{
+			UpdateEnemyHpBar(OtherActor);
+		}
+
 		if (!HasAuthority())
 		{
 			HitEnemies.Emplace(OtherActor);
@@ -789,7 +815,6 @@ void APlayerCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 		{
 			HitEnemies.Emplace(OtherActor);
 			AttackHitConfirm(OtherActor);
-			UpdateEnemyHpBar(OtherActor);
 		}
 	}
 }
